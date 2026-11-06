@@ -125,20 +125,25 @@ const UI = (() => {
     });
   }
 
-  /** Выбор из нескольких вариантов. choices: [{id,label,kind}] → Promise<id|null> */
-  function choose({ title, text, choices, icon: ic }) {
+  /**
+   * Выбор из нескольких вариантов. choices: [{id,label,kind,icon}] → Promise<id|null>
+   * Кнопки стоят столбиком во всю ширину: главная сверху, опасная — внизу.
+   */
+  function choose({ title, text, choices, icon: ic, extra }) {
+    const rank = (c) => (c.kind === 'primary' ? 0 : c.kind && c.kind.includes('danger') ? 2 : 1);
+    const ordered = choices.slice().sort((a, b) => rank(a) - rank(b));
     return new Promise((resolve) => {
       let done = false;
       openModal({
         title,
-        className: 'small',
-        body: h('div.confirm', null, ic ? h('div.confirm-icon', { icon: ic }) : null, h('p.confirm-text', { text })),
+        className: 'small.choose',
+        body: h('div.confirm', null, ic ? h('div.confirm-icon', { icon: ic }) : null, h('p.confirm-text', { text }), extra || null),
         onClose: () => {
           if (!done) resolve(null);
         },
         actions: [
-          'spacer',
-          ...choices.map((c) => ({
+          ...ordered.map((c) => ({
+            icon: c.icon,
             label: c.label,
             kind: c.kind,
             onClick: (mm) => {
@@ -179,6 +184,7 @@ const UI = (() => {
       h('span.toast-text', { text })
     );
     const remove = () => {
+      if (t.classList.contains('leaving')) return;
       t.classList.add('leaving');
       setTimeout(() => t.remove(), 250);
     };
@@ -195,6 +201,7 @@ const UI = (() => {
         })
       );
     }
+    t.appendChild(h('button.toast-x', { type: 'button', title: 'Закрыть', 'aria-label': 'Закрыть уведомление', icon: 'close', on: { click: remove } }));
     root.appendChild(t);
     setTimeout(remove, action ? Math.max(duration, 7000) : duration);
   }

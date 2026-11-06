@@ -35,14 +35,14 @@ test/e2e.js         сценарий автотеста; test/screenshots.js; te
 | Файл | Объект / функции | Назначение |
 |---|---|---|
 | changelog.js | `APP_LINKS`, `CHANGELOG` | ссылки и «Что нового» для раздела «О приложении» |
-| util.js | `h()`, `appendChildren`, `clear`, `icon()`/`ICONS`, `LIMITS`, `withCounter`, `cleanLine/cleanText`, `parseClipUrl`, `siteName`, цвета (`normHex`, `hexToHsv`, `hsvToHex`, `textOn`), `artFor`, форматтеры | общие помощники |
-| ui.js | `UI.openModal/confirm/choose/alert/toast/menu/closeMenu/busy` | окна, меню, уведомления |
+| util.js | `h()`, `appendChildren`, `clear`, `icon()`/`ICONS`, `LIMITS`, `withCounter(input, max, {quiet})`, `cleanLine/cleanText`, `parseClipUrl`, `siteName`, `parseFileName` («Исполнитель - Название»), `fullTitle(t)`, цвета (`normHex`, `hexToHsv`, `hsvToHex`, `textOn`), `artFor`, форматтеры | общие помощники |
+| ui.js | `UI.openModal/confirm/choose({choices, extra})/alert/toast/menu/closeMenu/busy` | окна (в `choose` кнопки столбиком: primary сверху, danger снизу), меню, уведомления (с крестиком) |
 | storage.js | `S` (состояние), `Store.save(doc)/load()`, `Lib.*`, `DEFAULT_*`, `mediaUrl/coverUrl` | данные + сохранение |
-| attributes.js | `ATTR_TYPES`, `OPTION_COLORS`, `Attr.*` (isEmpty, text, display, field, optionColor), `AttributesManager.open()` | атрибуты |
+| attributes.js | `ATTR_TYPES`, `OPTION_COLORS`, `Attr.*` (isEmpty, text, display, field, optionColor), `AttributesManager.open()`, `AttributesManager.create(onCreated)` (из формы трека) | атрибуты |
 | categories.js | `Categories.open/picker/count`, `CATEGORY_COLORS` | категории |
 | player.js | `Player.play/toggle/stop/forget/isPlaying/onChange(fn)→unsubscribe/mountVideo` | один общий `<video>` на всё приложение |
 | filters.js | `Filters.renderBar/renderPanel/match/sort/reset/...` | поиск, фильтры, сортировка, строка категорий со стрелками |
-| tracks.js | `Cards.*`, `Tracks.openForm/addFromPaths/remove/restore/purge/replaceFile/...`, `openClip()` | карточки, форма трека, импорт |
+| tracks.js | `Cards.*`, `Tracks.openForm/addFromPaths/remove/restore/purge/replaceFile/...`, `openClip()` | карточки, форма трека, импорт (дубликаты спрашиваются в `askDuplicate` ДО копирования) |
 | backup.js | `Backup.open(tab)` (окно «Настройки»: копии / корзина / перенос / о приложении), `periodic`, `integrity`, `recoveryScreen` | настройки, бэкапы |
 | dropdown.js | `dropdown({options,value,onChange})` | стилизованный select (системных `<select>` в проекте нет — так и держать) |
 | colorpicker.js | `colorButton(value, onChange)`, `COLOR_PRESETS` | палитра цвета |
@@ -52,7 +52,7 @@ test/e2e.js         сценарий автотеста; test/screenshots.js; te
 
 ## Данные
 Папка: `%APPDATA%\My Music Library\Library\` (`data/*.json`, `storage/tracks|covers|trash`, `backups/`). Путь меняется в настройках, хранится в `config.json`.
-- `library.json`: `{version, tracks:[...], trash:[{track, deletedAt}]}`. Трек: `id, title, fileName (уникальный id+расширение), originalFileName, mime, size, duration, hasVideo, cover, notes, clipUrl?, categories[], attributes{attrId: value}, status: 'ready'|'draft', createdAt, updatedAt`.
+- `library.json`: `{version, tracks:[...], trash:[{track, deletedAt}]}`. Трек: `id, title, artist?, fileName (уникальный id+расширение), originalFileName, mime, size, duration, hasVideo, cover, notes, clipUrl?, categories[], attributes{attrId: value}, status: 'ready'|'draft', createdAt, updatedAt`.
 - `attributes.json`: `{attributes:[{id, name, type, required, showOnCard, options:[{id,label,color}], min, max}]}`; типы: text, textarea, select, multiselect, number, scale.
 - `categories.json`: `{categories:[{id, name, color}]}`; `settings.json`: sort, volume, autoBackup(false по умолч.), backupEvery(day|week|month), lastAutoBackup, tutorialDone.
 - Значения атрибутов хранятся по **id** атрибута/варианта → переименование ничего не ломает.

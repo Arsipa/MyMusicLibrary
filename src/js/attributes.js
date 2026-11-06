@@ -88,7 +88,7 @@ const Attr = {
       case 'textarea': {
         const ta = h('textarea.input.textarea', { rows: 4, on: { input: changed } });
         ta.value = value ?? '';
-        return { el: withCounter(ta, LIMITS.attrTextarea), get: () => cleanText(ta.value, LIMITS.attrTextarea), focus: () => ta.focus() };
+        return { el: withCounter(ta, LIMITS.attrTextarea, { quiet: true }), get: () => cleanText(ta.value, LIMITS.attrTextarea), focus: () => ta.focus() };
       }
       case 'select':
       case 'multiselect': {
@@ -284,7 +284,7 @@ const AttributesManager = (() => {
   function edit(existing, after) {
     const draft = existing
       ? deepClone(existing)
-      : { id: uid('a_'), name: '', type: 'select', required: false, showOnCard: false, options: [], min: 1, max: 10 };
+      : { id: uid('a_'), name: '', type: 'select', required: false, showOnCard: false, options: [], min: null, max: null }; // границы по типу: у шкалы 1–10 по умолчанию, у числа — без ограничений
     if (!draft.options) draft.options = [];
     const originalType = existing ? existing.type : null;
 
@@ -503,7 +503,7 @@ const AttributesManager = (() => {
       if (affected.length) await Store.save('library');
       Filters.dropAttr(draft.id);
       m.close('force');
-      after && after();
+      after && after(draft);
       App.refresh();
       UI.toast(existing ? 'Атрибут обновлён' : `Атрибут «${draft.name}» создан — он уже есть у всех треков`, { kind: 'ok' });
     }
@@ -547,7 +547,12 @@ const AttributesManager = (() => {
     return true;
   }
 
-  return { open };
+  /** Создать атрибут из любого места (например, из формы трека). onCreated(attr) — после сохранения. */
+  function create(onCreated) {
+    edit(null, (a) => onCreated && onCreated(a));
+  }
+
+  return { open, create };
 })();
 
 function toggle(label, on) {

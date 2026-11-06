@@ -180,6 +180,7 @@ const Filters = (() => {
       { value: 'createdAt', label: 'Дата добавления', group: g1 },
       { value: 'updatedAt', label: 'Дата изменения', group: g1 },
       { value: 'title', label: 'Название', group: g1 },
+      { value: 'artist', label: 'Исполнитель', group: g1 },
       { value: 'duration', label: 'Длительность', group: g1 },
     ];
     for (const a of Lib.attrs()) {
@@ -387,7 +388,7 @@ const Filters = (() => {
     const q = normalize(state.search).trim();
     if (q) {
       const hay = normalize(
-        [t.title, t.originalFileName, t.notes, ...Lib.attrs().map((a) => Attr.text(a, t.attributes[a.id])), ...t.categories.map((id) => (Lib.cat(id) || {}).name)].join(' \u0001 ')
+        [t.title, t.artist, t.originalFileName, t.notes, ...Lib.attrs().map((a) => Attr.text(a, t.attributes[a.id])), ...t.categories.map((id) => (Lib.cat(id) || {}).name)].join(' \u0001 ')
       );
       if (!q.split(/\s+/).every((w) => hay.includes(w))) return false;
     }
@@ -402,6 +403,9 @@ const Filters = (() => {
     let isText = false;
     if (key === 'title') {
       getter = (t) => t.title;
+      isText = true;
+    } else if (key === 'artist') {
+      getter = (t) => t.artist || null;
       isText = true;
     } else if (key === 'createdAt' || key === 'updatedAt') getter = (t) => t[key] || '';
     else if (key === 'duration') getter = (t) => t.duration ?? null;

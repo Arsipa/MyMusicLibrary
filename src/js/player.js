@@ -101,7 +101,7 @@ const Player = (() => {
     bar().hidden = !t;
     if (!t) return;
     els.title.textContent = t.title;
-    els.sub.textContent = cardSubtitle(t) || t.originalFileName || '';
+    els.sub.textContent = [t.artist, cardSubtitle(t)].filter(Boolean).join(' · ') || t.originalFileName || '';
     els.play.innerHTML = icon(media.paused ? 'play' : 'pause');
     els.play.classList.toggle('playing', !media.paused);
     els.loop.classList.toggle('on', loop);

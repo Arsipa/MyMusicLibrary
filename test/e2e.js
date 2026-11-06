@@ -441,6 +441,87 @@ module.exports = async (win, getLib) => {
     ok((await js(`Lib.tracks().length`)) === 4, 'восстановлено из последней сохранённой версии');
     await shot('19-restored');
 
+    // ---- Крестик у уведомлений
+    await js(`UI.toast('Проверка крестика', { duration: 60000 }); 1`);
+    await sleep(300);
+    ok(await js(`!!document.querySelector('.toast .toast-x')`), 'у уведомления есть крестик');
+    await js(`[...document.querySelectorAll('.toast')].pop().querySelector('.toast-x').click(); 1`);
+    await sleep(400);
+    ok(!(await js(`[...document.querySelectorAll('.toast')].some(t => t.textContent.includes('Проверка крестика'))`)), 'крестик сразу закрывает уведомление');
+
+    // ---- Дубликат: спрашиваем до копирования и до формы
+    const tracksBefore = fs.readdirSync(getLib().tracksDir).length;
+    await js(`Tracks.addFromPaths([${JSON.stringify(path.join(MEDIA, 'Колыбельная.wav'))}]); 1`);
+    await waitFor(`document.querySelector('.modal.choose .dup-list')`);
+    ok(!(await js(`!!document.querySelector('.track-form')`)), 'при дубликате сначала окно «уже есть», форма не открывается');
+    await shot('20b-duplicate');
+    ok(await js(`(() => { const b=[...document.querySelectorAll('.modal.choose .modal-actions .btn')]; return b.length === 2 && b.every(x => Math.abs(x.offsetWidth - b[0].offsetWidth) < 2); })()`), 'кнопки окна выбора ровные, одной ширины');
+    await click('.modal.choose .modal-actions .btn', 'Отменить, это дубликат');
+    await sleep(600);
+    ok(fs.readdirSync(getLib().tracksDir).length === tracksBefore && !(await js(`!!document.querySelector('.track-form')`)), 'отменённый дубликат не скопирован, форма не открывалась');
+    await js(`Tracks.addFromPaths([${JSON.stringify(path.join(MEDIA, 'Колыбельная.wav'))}]); 1`);
+    await waitFor(`document.querySelector('.modal.choose .dup-list')`);
+    await click('.modal.choose .modal-actions .btn', 'Всё равно добавить');
+    await waitFor(`document.querySelector('.track-form')`, 15000);
+    ok(fs.readdirSync(getLib().tracksDir).length === tracksBefore + 1, '«Всё равно добавить» копирует файл и открывает форму');
+
+    // ---- Окно «Трек ещё не сохранён»: кнопки столбиком
+    await js(`document.querySelector('.form-modal .modal-x').click(); 1`);
+    await waitFor(`document.querySelector('.modal.choose')`);
+    await shot('20c-cancel-choice');
+    ok(await js(`(() => { const b=[...document.querySelectorAll('.modal.choose .modal-actions .btn')]; const w=b[0].offsetWidth; return b.length === 3 && b.every(x => Math.abs(x.offsetWidth - w) < 2) && b[0].textContent.includes('Вернуться'); })()`), 'окно отмены: три ровные кнопки, «Вернуться к форме» — первая');
+    await click('.modal.choose .modal-actions .btn', 'Вернуться к форме');
+    await sleep(300);
+
+    // ---- Новый атрибут прямо из формы, введённое не теряется
+    await js(`(() => { const i=document.querySelector('.input-title'); i.value='Колыбельная (живая версия)'; i.dispatchEvent(new Event('input',{bubbles:true})); return 1; })()`);
+    await js(`document.querySelector('.add-attr-btn').click(); 1`);
+    await sleep(400);
+    await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); m.querySelector('input.input').value='Темп'; [...m.querySelectorAll('.type-tile')].find(b=>b.dataset.type==='number').click(); return 1; })()`);
+    await sleep(200);
+    await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); [...m.querySelectorAll('.modal-actions .btn')].find(b=>b.textContent.includes('Сохранить')).click(); return 1; })()`);
+    await sleep(700);
+    const tempoId = await js(`(Lib.attrs().find(a => a.name === 'Темп') || {}).id`);
+    ok(!!tempoId && (await js(`!!document.querySelector('.track-form .form-field[data-attr="${tempoId}"]')`)), 'атрибут, созданный из формы, сразу появился в ней');
+    ok(await js(`document.querySelector('.input-title').value === 'Колыбельная (живая версия)'`), 'введённое в форме не потерялось');
+    await shot('20d-attr-from-form');
+
+    // ---- Многострочный атрибут без лимита в 1500
+    ok(await js(`document.querySelector('.form-field[data-attr="learning_stage"] textarea').maxLength >= 50000`), 'у многострочного атрибута нет ограничения в 1500 символов');
+    await js(`(() => { const f=(a)=>document.querySelector('.form-field[data-attr="'+a+'"]');
+      [...f('mood').querySelectorAll('.opt')][0].click(); [...f('language').querySelectorAll('.opt')][0].click(); [...f('knowledge').querySelectorAll('.scale-cell')][4].click();
+      f('${tempoId}').querySelector('input').value='96';
+      const ta=f('learning_stage').querySelector('textarea'); ta.value='Куплет: ля-ля-ля, длинный текст песни. '.repeat(100); ta.dispatchEvent(new Event('input',{bubbles:true})); return 1; })()`);
+    await click('.modal-actions .btn', 'Сохранить трек');
+    await sleep(600);
+    let saved = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'library.json'), 'utf8')).tracks.find((t) => t.title === 'Колыбельная (живая версия)');
+    ok(saved && saved.attributes.learning_stage.length > 3000 && saved.attributes[tempoId] === 96, 'длинный текст (>3000 символов) и новый атрибут сохранены: ' + (saved && saved.attributes.learning_stage.length));
+
+    // ---- Исполнитель отдельно: «Исполнитель - Название.wav» разбирается сам
+    const artistFile = path.join(MEDIA, 'Мария Иванова - Осенний вальс.wav');
+    fs.copyFileSync(path.join(MEDIA, 'Song.wav'), artistFile);
+    await js(`Tracks.addFromPaths([${JSON.stringify(artistFile)}]); 1`);
+    await waitFor(`document.querySelector('.track-form')`, 15000);
+    ok(await js(`document.querySelector('.input-title').value === 'Осенний вальс' && document.querySelector('.input-artist').value === 'Мария Иванова'`), 'из имени файла исполнитель и название разложены по своим полям');
+    await shot('20e-artist-form');
+    await js(`(() => { const f=(a)=>document.querySelector('.form-field[data-attr="'+a+'"]');
+      [...f('mood').querySelectorAll('.opt')][1].click(); [...f('language').querySelectorAll('.opt')][0].click(); [...f('knowledge').querySelectorAll('.scale-cell')][2].click(); return 1; })()`);
+    await click('.modal-actions .btn', 'Сохранить трек');
+    await sleep(600);
+    saved = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'library.json'), 'utf8')).tracks.find((t) => t.title === 'Осенний вальс');
+    ok(saved && saved.artist === 'Мария Иванова', 'исполнитель сохранён отдельным полем');
+    const waltzId = saved.id;
+    ok(await js(`document.querySelector('.card[data-id="${waltzId}"] .card-artist').textContent === 'Мария Иванова'`), 'исполнитель показан на карточке');
+    await js(`(() => { const i=document.querySelector('.search-input'); i.value='иванова'; i.dispatchEvent(new Event('input')); return 1; })()`);
+    await sleep(400);
+    ok((await js(`[...document.querySelectorAll('.card')].map(c=>c.dataset.id).join()`)) === waltzId, 'поиск находит песню по исполнителю');
+    await js(`Filters.reset(); App.openDetail(${JSON.stringify(waltzId)}); 1`);
+    await sleep(400);
+    ok(await js(`document.querySelector('.d-artist').textContent === 'Мария Иванова'`), 'исполнитель показан на странице песни');
+    await js(`App.closeDetail(); 1`);
+    ok(await js(`Filters.sort(Lib.tracks()).length > 0 && (() => { S.settings.sort.key='artist'; S.settings.sort.dir='asc'; const r=Filters.sort(Lib.tracks().filter(t=>t.status!=='draft')); S.settings.sort.key='createdAt'; S.settings.sort.dir='desc'; return r[0].artist === 'Мария Иванова'; })()`), 'сортировка по исполнителю работает');
+    fs.rmSync(artistFile, { force: true });
+
     // ---- Узкое окно
     win.setSize(820, 900);
     await sleep(600);

@@ -11,14 +11,14 @@ const OUT = path.join(__dirname, '..', 'docs', 'screenshots');
 const MEDIA = path.join(__dirname, 'media');
 
 const DEMO = [
-  { title: 'Ночной трамвай', clip: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', file: 'Кукушка (минус).wav', mood: 'sad', lang: 'ru', k: 8, cats: ['cat_concert', 'cat_fav'], stage: 'Куплеты уверенно, в припеве подтянуть верхнюю ноту.', notes: 'Взять дыхание перед вторым припевом. Темп чуть медленнее оригинала — так легче держать длинные ноты.' },
-  { title: 'Summer Rain', file: 'Shallow_instrumental.wav', mood: 'happy', lang: 'en', k: 6, cats: ['cat_rehearsal'], stage: 'Текст выучен, работаю над ритмом во втором куплете.', notes: 'Поработать над произношением в бридже, особенно «through» и «thought».' },
-  { title: 'Колыбельная для луны', file: 'Колыбельная.wav', mood: 'neutral', lang: 'ru', k: 10, cats: ['cat_concert', 'cat_vocal'], stage: 'Готово!', notes: 'Готово к выступлению. Держать piano в последнем куплете.' },
-  { title: 'Paper Hearts', file: 'Song.wav', mood: 'sad', lang: 'en', k: 4, cats: ['cat_vocal'], stage: 'Пока только первый куплет.', notes: 'Разобрать мелизмы в конце фраз, записать себя на диктофон и сравнить.' },
-  { title: 'Танго на крыше', file: 'Кукушка (минус).wav', mood: 'happy', lang: 'ru', k: 7, cats: ['cat_concert'], stage: '', notes: 'Добавить больше драмы во втором куплете, паузу перед финалом не затягивать.' },
-  { title: 'Blue Velvet Sky', file: 'Shallow_instrumental.wav', mood: 'neutral', lang: 'en', k: 9, cats: ['cat_fav'], stage: 'Всё выучено.', notes: 'Попробовать на полтона ниже — так звучит теплее.' },
-  { title: 'Северное сияние', file: 'Колыбельная.wav', mood: 'sad', lang: 'ru', k: 3, cats: ['cat_rehearsal', 'cat_vocal'], stage: 'Только начала.', notes: 'Новая песня — слушать каждый день по разу, пока не уляжется.' },
-  { title: 'Fly Me Higher', file: 'Song.wav', mood: 'happy', lang: 'en', k: 5, cats: ['cat_rehearsal'], stage: '', notes: '' },
+  { title: 'Ночной трамвай', artist: 'Лиза Север', clip: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', file: 'Кукушка (минус).wav', mood: 'sad', lang: 'ru', k: 8, cats: ['cat_concert', 'cat_fav'], stage: 'Куплеты уверенно, в припеве подтянуть верхнюю ноту.', notes: 'Взять дыхание перед вторым припевом. Темп чуть медленнее оригинала — так легче держать длинные ноты.' },
+  { title: 'Summer Rain', artist: 'The Velvet Hours', file: 'Shallow_instrumental.wav', mood: 'happy', lang: 'en', k: 6, cats: ['cat_rehearsal'], stage: 'Текст выучен, работаю над ритмом во втором куплете.', notes: 'Поработать над произношением в бридже, особенно «through» и «thought».' },
+  { title: 'Колыбельная для луны', artist: 'Анна Рассвет', file: 'Колыбельная.wav', mood: 'neutral', lang: 'ru', k: 10, cats: ['cat_concert', 'cat_vocal'], stage: 'Готово!', notes: 'Готово к выступлению. Держать piano в последнем куплете.' },
+  { title: 'Paper Hearts', artist: 'Mila Grey', file: 'Song.wav', mood: 'sad', lang: 'en', k: 4, cats: ['cat_vocal'], stage: 'Пока только первый куплет.', notes: 'Разобрать мелизмы в конце фраз, записать себя на диктофон и сравнить.' },
+  { title: 'Танго на крыше', artist: 'Оркестр «Фонари»', file: 'Кукушка (минус).wav', mood: 'happy', lang: 'ru', k: 7, cats: ['cat_concert'], stage: '', notes: 'Добавить больше драмы во втором куплете, паузу перед финалом не затягивать.' },
+  { title: 'Blue Velvet Sky', artist: 'Nora Lane', file: 'Shallow_instrumental.wav', mood: 'neutral', lang: 'en', k: 9, cats: ['cat_fav'], stage: 'Всё выучено.', notes: 'Попробовать на полтона ниже — так звучит теплее.' },
+  { title: 'Северное сияние', artist: 'Лиза Север', file: 'Колыбельная.wav', mood: 'sad', lang: 'ru', k: 3, cats: ['cat_rehearsal', 'cat_vocal'], stage: 'Только начала.', notes: 'Новая песня — слушать каждый день по разу, пока не уляжется.' },
+  { title: 'Fly Me Higher', artist: 'Skyline Duo', file: 'Song.wav', mood: 'happy', lang: 'en', k: 5, cats: ['cat_rehearsal'], stage: '', notes: '' },
 ];
 
 module.exports = async (win) => {
@@ -74,7 +74,7 @@ module.exports = async (win) => {
         const at = new Date(base + i * 86400000 * 2).toISOString();
         const attrs = { mood: d.mood, language: d.lang, knowledge: d.k };
         if (d.stage) attrs.learning_stage = d.stage;
-        S.library.tracks.push({ id: 'trk_demo' + i, title: d.title, originalFileName: d.title + '.mp3', fileName: info.fileName,
+        S.library.tracks.push({ id: 'trk_demo' + i, title: d.title, artist: d.artist, originalFileName: d.title + '.mp3', fileName: info.fileName,
           filePath: 'storage/tracks/' + info.fileName, mime: info.mime, size: info.size, duration: p.duration, hasVideo: false,
           cover: null, clipUrl: d.clip || undefined, notes: d.notes, categories: d.cats, attributes: attrs, status: 'ready', createdAt: at, updatedAt: at });
       }

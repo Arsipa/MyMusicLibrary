@@ -122,6 +122,21 @@ function titleFromFile(name) {
   );
 }
 
+/**
+ * «Исполнитель - Название (минус).mp3» → { artist, title }. Если дефиса нет — исполнитель пустой.
+ */
+function parseFileName(name) {
+  const full = titleFromFile(name);
+  const m = /^(.{1,100}?)\s+[-–—]\s+(.+)$/.exec(full);
+  if (m && m[2].trim()) return { artist: m[1].trim(), title: m[2].trim().slice(0, 120) };
+  return { artist: '', title: full };
+}
+
+/** «Исполнитель — Название» для подписей */
+function fullTitle(t) {
+  return t.artist ? `${t.artist} — ${t.title}` : t.title;
+}
+
 function normalize(s) {
   return String(s || '')
     .toLowerCase()
@@ -137,9 +152,10 @@ function normalize(s) {
  */
 const LIMITS = {
   trackTitle: 120,
+  artist: 100,
   notes: 1500,
   attrText: 120,
-  attrTextarea: 1500,
+  attrTextarea: 50000, // многострочные атрибуты — например, полный текст песни; предел только от случайной вставки мегабайтов
   attrName: 40,
   optionLabel: 40,
   categoryName: 40,
@@ -148,8 +164,11 @@ const LIMITS = {
   number: 1e9,
 };
 
-/** Поле со счётчиком символов. Для однострочных полей счётчик появляется ближе к пределу. */
-function withCounter(input, max) {
+/**
+ * Поле со счётчиком символов. Для однострочных полей (и при quiet) счётчик появляется только ближе к пределу.
+ * Многострочное поле само растёт по мере ввода (до разумной высоты, дальше — прокрутка).
+ */
+function withCounter(input, max, { quiet = false } = {}) {
   input.maxLength = max;
   const counter = h('span.char-count');
   const multi = input.tagName === 'TEXTAREA';
@@ -157,10 +176,15 @@ function withCounter(input, max) {
     const n = input.value.length;
     counter.textContent = `${n} / ${max}`;
     counter.classList.toggle('near', n >= max * 0.9);
-    counter.hidden = !multi && n < max * 0.7;
+    counter.hidden = (!multi || quiet) && n < max * (quiet ? 0.9 : 0.7);
+    if (multi && input.isConnected) {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight + 4, 460) + 'px';
+    }
   };
   input.addEventListener('input', update);
   update();
+  if (multi) requestAnimationFrame(update);
   return h('div.field-wrap' + (multi ? '.multi' : ''), null, input, counter);
 }
 

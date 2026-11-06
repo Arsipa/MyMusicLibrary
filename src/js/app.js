@@ -91,7 +91,7 @@ const App = (() => {
             'div.draft-item',
             null,
             Cards.art(t, true),
-            h('span.draft-title', { text: t.title, title: t.originalFileName }),
+            h('span.draft-title', { text: fullTitle(t), title: t.originalFileName }),
             h('button.btn.btn-primary.sm', { on: { click: () => Tracks.openForm(t.id, { mode: 'new' }) } }, 'Дозаполнить')
           )
         )
@@ -232,6 +232,7 @@ const App = (() => {
             'div.d-head',
             null,
             cats.length ? h('div.d-cats', null, cats.map((c) => h('span.cat-pill.on', { style: { '--c': c.color } }, h('span.cat-pill-dot'), c.name))) : null,
+            t.artist ? h('div.d-artist', { text: t.artist }) : null,
             h('h1.d-title', { text: t.title }),
             h(
               'div.d-file',

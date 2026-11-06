@@ -107,7 +107,8 @@ const Cards = (() => {
         null,
         missing ? h('div.card-warn', null, h('span', { icon: 'warn' }), 'Файл не найден') : null,
         t.status === 'draft' ? h('div.card-warn.draft', null, h('span', { icon: 'edit' }), 'Не заполнено до конца') : null,
-        h('h3.card-title', { text: t.title, title: t.title }),
+        t.artist ? h('div.card-artist', { text: t.artist, title: t.artist }) : null,
+        h('h3.card-title', { text: t.title, title: fullTitle(t) }),
         chips.children.length ? chips : null,
         meter,
         snip ? h('p.card-note', { text: snip }) : null,
@@ -175,12 +176,28 @@ const Tracks = (() => {
 
   async function addFromPaths(paths) {
     if (!paths || !paths.length) return;
-    const busy = UI.busy('Копирую в библиотеку…');
+    let busy = null; // индикатор показываем только на время копирования, не поверх вопросов
     const added = [];
     const errors = [];
+    let skipped = 0;
     try {
       for (let i = 0; i < paths.length; i++) {
         const name = basename(paths[i]);
+        // дубликат? спрашиваем ДО копирования и до формы
+        const guess = parseFileName(name);
+        const dups = duplicatesOf({ id: null, originalFileName: name, title: guess.title, artist: guess.artist });
+        if (dups.length) {
+          if (busy) {
+            busy.done();
+            busy = null;
+          }
+          const answer = await askDuplicate(name, dups);
+          if (answer !== 'add') {
+            skipped++;
+            continue;
+          }
+        }
+        if (!busy) busy = UI.busy('Копирую в библиотеку…');
         busy.set(paths.length > 1 ? `Копирую ${i + 1} из ${paths.length}: ${name}` : `Копирую «${name}»…`);
         const r = await window.api.importTrack(paths[i]);
         if (!r.ok) {
@@ -195,9 +212,11 @@ const Tracks = (() => {
           continue;
         }
         const now = new Date().toISOString();
+        const names = parseFileName(info.originalFileName);
         const t = {
           id: uid('trk_'),
-          title: titleFromFile(info.originalFileName),
+          title: names.title,
+          artist: names.artist || undefined,
           originalFileName: info.originalFileName,
           fileName: info.fileName,
           filePath: 'storage/tracks/' + info.fileName,
@@ -224,9 +243,10 @@ const Tracks = (() => {
         added.push(t);
       }
     } finally {
-      busy.done();
+      if (busy) busy.done();
     }
     App.refresh();
+    if (skipped) UI.toast(skipped === 1 ? 'Дубликат не добавлен' : `Не добавлено дубликатов: ${skipped}`);
     if (errors.length) {
       await UI.alert({
         title: added.length ? 'Не все файлы получилось добавить' : 'Файл не добавлен',
@@ -240,8 +260,46 @@ const Tracks = (() => {
     }
   }
 
+  /** Окно «Похоже, это дубликат» — показывает, что уже есть в библиотеке. Возвращает 'add' или null */
+  function askDuplicate(fileName, dups) {
+    const list = h(
+      'div.dup-list',
+      null,
+      dups.slice(0, 3).map((d) =>
+        h(
+          'div.dup-item',
+          null,
+          Cards.art(d, true),
+          h(
+            'div.dup-main',
+            null,
+            h('b', { text: fullTitle(d) }),
+            h('span', { text: [`добавлена ${fmtDate(d.createdAt, false)}`, d.originalFileName, d.duration ? fmtTime(d.duration) : null].filter(Boolean).join(' · ') })
+          )
+        )
+      ),
+      dups.length > 3 ? h('p.muted.small', { text: `и ещё ${dups.length - 3}` }) : null
+    );
+    return UI.choose({
+      title: 'Похоже, эта песня уже есть',
+      text: `Файл «${fileName}» похож на ${dups.length > 1 ? 'песни, которые уже лежат' : 'песню, которая уже лежит'} в библиотеке:`,
+      icon: 'warn',
+      extra: h('div', null, list, h('p.muted.small.dup-hint', { text: 'Если это та же самая минусовка — просто отмените, ничего не скопируется. Если другая версия — добавьте её.' })),
+      choices: [
+        { id: 'add', label: 'Всё равно добавить', kind: 'primary' },
+        { id: 'skip', label: 'Отменить, это дубликат', kind: 'ghost' },
+      ],
+    });
+  }
+
+  /** Похожие треки в библиотеке: тот же исходный файл или то же название (и исполнитель, если он известен у обоих) */
   function duplicatesOf(t) {
-    return Lib.tracks().filter((x) => x.id !== t.id && (x.originalFileName === t.originalFileName || normalize(x.title) === normalize(t.title)) && x.status !== 'draft');
+    const same = (x) => {
+      if (x.originalFileName && x.originalFileName === t.originalFileName) return true;
+      if (normalize(x.title) !== normalize(t.title)) return false;
+      return !x.artist || !t.artist || normalize(x.artist) === normalize(t.artist);
+    };
+    return Lib.tracks().filter((x) => x.id !== t.id && x.status !== 'draft' && same(x));
   }
 
   /**
@@ -260,9 +318,31 @@ const Tracks = (() => {
 
       const titleInp = h('input.input.input-title', { type: 'text', value: t.title, placeholder: 'Название песни' });
       const titleErr = h('p.field-error', { hidden: true });
+      const artistInp = h('input.input.input-artist', { type: 'text', value: t.artist || '', placeholder: 'Кто исполняет или автор' });
       const fields = [];
       const attrsBox = h('div.form-attrs');
-      for (const a of Lib.attrs()) {
+      // атрибут можно создать прямо отсюда — его поле сразу появится в форме, введённое раньше не пропадёт
+      const addAttrBtn = h(
+        'button.btn.btn-soft.sm.add-attr-btn',
+        {
+          type: 'button',
+          on: {
+            click: () =>
+              AttributesManager.create((a) => {
+                attrsBox.querySelector(':scope > .muted')?.remove();
+                const row = addFieldRow(a);
+                attrsBox.appendChild(row);
+                requestAnimationFrame(() => {
+                  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  row.classList.add('just-added');
+                });
+              }),
+          },
+        },
+        h('span', { icon: 'plus' }),
+        'Новый атрибут'
+      );
+      function addFieldRow(a) {
         const f = Attr.field(a, t.attributes[a.id], { onChange: () => (dirty = true) });
         const err = h('p.field-error', { hidden: true });
         const wasEmpty = Attr.isEmpty(a, t.attributes[a.id]);
@@ -275,9 +355,10 @@ const Tracks = (() => {
           err
         );
         fields.push({ a, f, err, row, wasEmpty });
-        attrsBox.appendChild(row);
+        return row;
       }
-      if (!Lib.attrs().length) attrsBox.appendChild(h('p.muted', { text: 'Атрибутов пока нет — их можно создать кнопкой «Атрибуты».' }));
+      for (const a of Lib.attrs()) attrsBox.appendChild(addFieldRow(a));
+      if (!Lib.attrs().length) attrsBox.appendChild(h('p.muted', { text: 'Характеристик пока нет — создайте первую кнопкой «Новый атрибут».' }));
 
       const cats = Categories.picker(t.categories);
       const notes = h('textarea.input.textarea', { rows: 3, placeholder: 'Любые мысли: что получается, над чем поработать…' });
@@ -327,7 +408,6 @@ const Tracks = (() => {
       paintListen();
       const stopListening = Player.onChange(paintListen);
 
-      const dups = isNew ? duplicatesOf(t) : [];
       const fileInfo = h(
         'div.file-strip',
         null,
@@ -345,10 +425,20 @@ const Tracks = (() => {
         'div.track-form',
         { on: { input: () => (dirty = true), click: (e) => e.target.closest('.opt, .scale-cell, .cat-chip') && (dirty = true) } },
         fileInfo,
-        dups.length ? h('div.note-warn', null, h('span', { icon: 'warn' }), `Похоже, такой трек уже есть: «${dups[0].title}». Ничего страшного — файлы хранятся отдельно, просто проверьте, не дубль ли это.`) : null,
-        h('div.form-top', null, h('div.form-field', null, h('div.field-label', null, 'Название', h('b.req', { text: '*' })), withCounter(titleInp, LIMITS.trackTitle), titleErr), coverBox),
+        h(
+          'div.form-top',
+          null,
+          h(
+            'div.form-names',
+            null,
+            h('div.form-field', null, h('div.field-label', null, 'Название', h('b.req', { text: '*' })), withCounter(titleInp, LIMITS.trackTitle), titleErr),
+            h('div.form-field', null, h('div.field-label', null, 'Исполнитель', h('span.muted.small.label-note', { text: '— необязательно' })), withCounter(artistInp, LIMITS.artist))
+          ),
+          coverBox
+        ),
         h('h4.form-section', { text: 'Характеристики' }),
         attrsBox,
+        h('div.add-attr-line', null, addAttrBtn),
         h('h4.form-section', { text: 'Категории' }),
         cats.el,
         h('h4.form-section', { text: 'Комментарий' }),
@@ -507,6 +597,9 @@ const Tracks = (() => {
           return false;
         }
         t.title = title || t.title;
+        const artist = cleanLine(artistInp.value, LIMITS.artist);
+        if (artist) t.artist = artist;
+        else delete t.artist;
         for (const [k, v] of Object.entries(values)) {
           if (v === undefined) delete t.attributes[k];
           else t.attributes[k] = v;
