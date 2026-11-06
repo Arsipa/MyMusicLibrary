@@ -143,15 +143,18 @@ module.exports = async (win) => {
     await js(`(() => { document.querySelectorAll('.modal-overlay').forEach(o => o.remove()); return 1; })()`);
     await sleep(300);
 
-    // 8. Хранилище
+    // 8. Настройки
     await js(`S.settings.autoBackup = true; S.settings.backupEvery = 'week'; Backup.open(); 1`);
     await sleep(500);
     await js(`[...document.querySelectorAll('.btn')].find(b=>b.textContent.includes('Создать копию сейчас')).click(); 1`);
     await sleep(1500);
     await shot('backups');
+    await js(`[...document.querySelectorAll('.tab')].find(b=>b.textContent.includes('О приложении')).click(); 1`);
+    await sleep(600);
+    await shot('about');
     await js(`document.querySelectorAll('.modal-overlay').forEach(o => o.remove()); 1`);
 
-    // 9. Узкое окно
+    // 9. Узкое окно (для проверки адаптивности)
     win.setContentSize(820, 900);
     await sleep(700);
     await shot('narrow');

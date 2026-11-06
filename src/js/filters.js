@@ -57,6 +57,9 @@ const Filters = (() => {
     b.append(
       h('label.search', null, h('span', { icon: 'search' }), searchInp),
       h(
+        'div.cat-line',
+        null,
+      h(
         'div.cat-strip',
         null,
         h(
@@ -88,6 +91,9 @@ const Filters = (() => {
             h('small', { text: Categories.count(c.id) })
           )
         )
+      ),
+      // та же функция, что у кнопки «Категории» наверху, — но там, где на неё смотрят
+      h('button.cat-add', { title: 'Создать категорию', 'aria-label': 'Создать категорию', icon: 'plus', on: { click: () => Categories.open() } })
       ),
       h(
         'button.filter-btn' + (state.panelOpen ? '.open' : '') + (cnt ? '.has' : ''),

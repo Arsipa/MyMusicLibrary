@@ -76,6 +76,35 @@ module.exports = async (win, getLib) => {
     ok(await js(`!!document.querySelector('.welcome')`), 'пустая библиотека показывает приветствие');
     ok(await js(`S.settings.autoBackup === false`), 'автокопии по умолчанию выключены');
     win.setSize(1400, 900);
+    await sleep(300);
+
+    // ---- Настройки вместо «Хранилища», обучение убрано с главного экрана
+    ok(await js(`!document.getElementById('btnHelp') && !document.getElementById('btnStorage') && document.getElementById('btnSettings').textContent.includes('Настройки')`), 'на главном экране кнопка «Настройки», кнопки «Обучение» нет');
+    // ---- «+» после строки категорий открывает категории
+    await js(`document.querySelector('.cat-add').click(); 1`);
+    await sleep(400);
+    ok(await js(`!!document.querySelector('.modal .cat-new input')`), 'кнопка «+» в строке категорий открывает создание категории');
+    await js(`(() => { const i=document.querySelector('.modal .cat-new input'); i.value='Для экзамена'; i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); return 1; })()`);
+    await sleep(400);
+    await js(`[...document.querySelectorAll('.modal-x')].pop().click(); 1`);
+    await sleep(300);
+    ok(await js(`[...document.querySelectorAll('.cat-strip .cat-pill')].some(b=>b.textContent.includes('Для экзамена'))`), 'новая категория сразу появилась в строке');
+    // ---- О приложении
+    await js(`document.getElementById('btnSettings').click(); 1`);
+    await sleep(400);
+    await js(`[...document.querySelectorAll('.tab')].find(b=>b.textContent.includes('О приложении')).click(); 1`);
+    await sleep(500);
+    await shot('00g-settings-about');
+    const ver = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version;
+    ok(await js(`document.querySelector('.about-version').textContent === 'Версия ${ver}'`), 'в «О приложении» показана версия ' + ver);
+    ok(await js(`document.querySelector('.about-news h4').textContent.includes('${ver}') && document.querySelector('.about-news p').textContent.length > 40`), 'есть «Что нового» для текущей версии');
+    ok(await js(`[...document.querySelectorAll('.about-link')].map(b=>b.dataset.url).join(' ') === 'https://t.me/arsipa https://github.com/Arsipa/MyMusicLibrary'`), 'ссылки на Telegram и GitHub на месте');
+    ok((await js(`window.api.openLink('https://t.me/arsipa').then(r=>r.ok)`)) && !(await js(`window.api.openLink('https://evil.example').then(r=>r.ok)`)), 'открываются только разрешённые ссылки');
+    await js(`document.querySelector('.about-tour-btn').click(); 1`);
+    await waitFor(`Tour.isActive() && !document.querySelector('.modal')`, 4000);
+    ok(true, '«Пройти заново» закрывает настройки и запускает обучение');
+    await js(`document.querySelector('.tour-skip').click(); 1`);
+    await sleep(500);
 
     // ---- Добавление: 4 нормальных + битый + неподдерживаемый
     const files = ['Кукушка (минус).wav', 'Shallow_instrumental.wav', 'Колыбельная.wav', 'Song.wav', 'broken.mp3', 'notes.txt'].map((f) => path.join(MEDIA, f));

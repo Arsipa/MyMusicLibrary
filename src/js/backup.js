@@ -93,12 +93,13 @@ const Backup = (() => {
     return res;
   }
 
-  /* ---------- Окно «Хранилище» ---------- */
+  /* ---------- Окно «Настройки» ---------- */
   function open(tab = 'backups') {
     const tabs = [
       ['backups', 'Резервные копии', 'shield'],
       ['trash', 'Корзина', 'trash'],
       ['transfer', 'Перенос и папка', 'folder'],
+      ['about', 'О приложении', 'help'],
     ];
     const content = h('div.store-content');
     const tabBar = h('div.tabs');
@@ -111,8 +112,8 @@ const Backup = (() => {
       tabBar.appendChild(h('button.tab', { dataset: { tab: id }, on: { click: () => select(id) } }, h('span', { icon: ic }), label, id === 'trash' && S.library.trash.length ? h('b.tab-count', { text: S.library.trash.length }) : null));
     }
     const m = UI.openModal({
-      title: 'Хранилище',
-      subtitle: 'Всё, что защищает вашу библиотеку: копии, корзина и место хранения.',
+      title: 'Настройки',
+      subtitle: 'Резервные копии, корзина, место хранения и всё о программе.',
       wide: true,
       accent: 'store',
       body: h('div', null, tabBar, content),
@@ -123,7 +124,61 @@ const Backup = (() => {
       clear(content);
       if (tab === 'backups') await renderBackups();
       else if (tab === 'trash') renderTrash();
-      else await renderTransfer();
+      else if (tab === 'transfer') await renderTransfer();
+      else await renderAbout();
+    }
+
+    async function renderAbout() {
+      const info = await window.api.info();
+      const version = info.ok ? info.value.version : '';
+      const entry = CHANGELOG.find((c) => c.version === version) || CHANGELOG[0];
+      const link = (url, ic, title, text, label) =>
+        h(
+          'button.about-link',
+          { type: 'button', dataset: { url }, on: { click: () => window.api.openLink(url) } },
+          h('span.about-link-ic', { icon: ic }),
+          h('span.about-link-main', null, h('b', { text: title }), h('span', { text })),
+          h('span.about-link-go', null, label, h('span', { icon: 'open' }))
+        );
+      content.append(
+        h(
+          'div.about-hero',
+          null,
+          h('img.about-icon', { src: 'assets/icon.png', alt: '' }),
+          h(
+            'div',
+            null,
+            h('h3.about-name', { text: 'My Music Library' }),
+            h('span.about-version', { text: 'Версия ' + version }),
+            h('p.about-love', { text: 'Сделано с любовью для моей любимой девушки 💜' })
+          )
+        ),
+        h('div.about-news', null, h('h4', null, h('span', { icon: 'sparkle' }), `Что нового в версии ${entry.version}`), h('p', { text: entry.text })),
+        h(
+          'div.about-links',
+          null,
+          link(APP_LINKS.telegram, 'telegram', 'Написать автору', 'Что-то не работает или есть идея, как сделать программу лучше? Пишите в Telegram.', '@arsipa'),
+          link(APP_LINKS.repo, 'github', 'Проект на GitHub', 'Исходный код, новые версии и история изменений.', 'Открыть')
+        ),
+        h(
+          'div.about-tour',
+          null,
+          h('span.about-link-ic', { icon: 'help' }),
+          h('span.about-link-main', null, h('b', { text: 'Обучение' }), h('span', { text: 'Ещё раз показать, где что находится и как всем пользоваться.' })),
+          h(
+            'button.btn.btn-primary.sm.about-tour-btn',
+            {
+              on: {
+                click: () => {
+                  m.close('force');
+                  setTimeout(() => Tour.start(), 250);
+                },
+              },
+            },
+            'Пройти заново'
+          )
+        )
+      );
     }
 
     async function renderBackups() {

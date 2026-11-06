@@ -387,6 +387,14 @@ function registerIpc() {
   });
 
   handle('app:info', async () => ({ version: app.getVersion() }));
+  // внешние ссылки — только заранее известные адреса, открываются в браузере по умолчанию
+  const ALLOWED_LINKS = ['https://github.com/Arsipa/MyMusicLibrary', 'https://t.me/arsipa'];
+  handle('app:open-link', async (url) => {
+    if (typeof url !== 'string' || !ALLOWED_LINKS.some((a) => url === a || url.startsWith(a + '/'))) throw new LibError('bad_name');
+    if (TEST) return url; // автотест не открывает настоящий браузер
+    await shell.openExternal(url);
+    return url;
+  });
 }
 
 app.whenReady().then(() => {

@@ -4,7 +4,7 @@
   .filterbar {
     flex-wrap: wrap;
   }
-  .cat-strip {
+  .cat-line {
     order: 5;
     flex-basis: 100%;
   }

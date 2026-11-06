@@ -356,8 +356,7 @@ const App = (() => {
     document.getElementById('btnAdd').addEventListener('click', () => Tracks.pickAndAdd());
     document.getElementById('btnAttributes').addEventListener('click', () => AttributesManager.open());
     document.getElementById('btnCategories').addEventListener('click', () => Categories.open());
-    document.getElementById('btnStorage').addEventListener('click', () => Backup.open());
-    document.getElementById('btnHelp').addEventListener('click', () => Tour.start());
+    document.getElementById('btnSettings').addEventListener('click', () => Backup.open());
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && detailId && !UI.hasModal()) closeDetail();
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f' && !UI.hasModal()) {
