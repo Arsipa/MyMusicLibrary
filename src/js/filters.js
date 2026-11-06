@@ -54,46 +54,74 @@ const Filters = (() => {
     }).el;
 
     const cnt = Object.keys(state.attrs).length;
+    const strip = h(
+      'div.cat-strip',
+      null,
+      h(
+        'button.cat-pill' + (state.cats.size === 0 ? '.on' : ''),
+        {
+          on: {
+            click: () => {
+              state.cats.clear();
+              changed();
+            },
+          },
+        },
+        'Все'
+      ),
+      Lib.cats().map((c) =>
+        h(
+          'button.cat-pill' + (state.cats.has(c.id) ? '.on' : ''),
+          {
+            style: { '--c': c.color },
+            on: {
+              click: () => {
+                state.cats.has(c.id) ? state.cats.delete(c.id) : state.cats.add(c.id);
+                changed();
+              },
+            },
+          },
+          h('span.cat-pill-dot'),
+          c.name,
+          h('small', { text: Categories.count(c.id) })
+        )
+      )
+    );
+    // если категорий больше, чем помещается, — стрелки по краям и прокрутка колёсиком мыши
+    const scrollBy = (dir) => strip.scrollBy({ left: dir * Math.max(160, strip.clientWidth * 0.7), behavior: 'smooth' });
+    const catScroll = h(
+      'div.cat-scroll',
+      null,
+      h('button.cat-arrow.left', { type: 'button', title: 'Предыдущие категории', 'aria-label': 'Предыдущие категории', icon: 'chevLeft', on: { click: () => scrollBy(-1) } }),
+      strip,
+      h('button.cat-arrow.right', { type: 'button', title: 'Следующие категории', 'aria-label': 'Следующие категории', icon: 'chevRight', on: { click: () => scrollBy(1) } })
+    );
+    strip.addEventListener(
+      'scroll',
+      () => {
+        state.catScroll = strip.scrollLeft;
+        updateArrows();
+      },
+      { passive: true }
+    );
+    strip.addEventListener(
+      'wheel',
+      (e) => {
+        const max = strip.scrollWidth - strip.clientWidth;
+        if (max <= 0 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+        e.preventDefault();
+        strip.scrollLeft += e.deltaY;
+      },
+      { passive: false }
+    );
     b.append(
       h('label.search', null, h('span', { icon: 'search' }), searchInp),
       h(
         'div.cat-line',
         null,
-      h(
-        'div.cat-strip',
-        null,
-        h(
-          'button.cat-pill' + (state.cats.size === 0 ? '.on' : ''),
-          {
-            on: {
-              click: () => {
-                state.cats.clear();
-                changed();
-              },
-            },
-          },
-          'Все'
-        ),
-        Lib.cats().map((c) =>
-          h(
-            'button.cat-pill' + (state.cats.has(c.id) ? '.on' : ''),
-            {
-              style: { '--c': c.color },
-              on: {
-                click: () => {
-                  state.cats.has(c.id) ? state.cats.delete(c.id) : state.cats.add(c.id);
-                  changed();
-                },
-              },
-            },
-            h('span.cat-pill-dot'),
-            c.name,
-            h('small', { text: Categories.count(c.id) })
-          )
-        )
-      ),
-      // та же функция, что у кнопки «Категории» наверху, — но там, где на неё смотрят
-      h('button.cat-add', { title: 'Создать категорию', 'aria-label': 'Создать категорию', icon: 'plus', on: { click: () => Categories.open() } })
+        catScroll,
+        // та же функция, что у кнопки «Категории» наверху, — но там, где на неё смотрят
+        h('button.cat-add', { title: 'Создать категорию', 'aria-label': 'Создать категорию', icon: 'plus', on: { click: () => Categories.open() } })
       ),
       h(
         'button.filter-btn' + (state.panelOpen ? '.open' : '') + (cnt ? '.has' : ''),
@@ -129,7 +157,20 @@ const Filters = (() => {
       )
     );
     if (keepFocus) searchInp.focus();
+    strip.scrollLeft = state.catScroll || 0;
+    requestAnimationFrame(updateArrows);
   }
+
+  /** Показать/спрятать стрелки строки категорий в зависимости от того, есть ли что прокручивать */
+  function updateArrows() {
+    const wrap = document.querySelector('.cat-scroll');
+    if (!wrap) return;
+    const strip = wrap.querySelector('.cat-strip');
+    const max = strip.scrollWidth - strip.clientWidth;
+    wrap.classList.toggle('can-left', strip.scrollLeft > 2);
+    wrap.classList.toggle('can-right', strip.scrollLeft < max - 2);
+  }
+  window.addEventListener('resize', () => requestAnimationFrame(updateArrows));
 
   function sortOptions() {
     const g1 = 'Основное';
@@ -211,7 +252,7 @@ const Filters = (() => {
             h(
               'button.fp-opt' + (vals.has(o.id) ? '.on' : ''),
               {
-                style: { '--c': OPTION_COLORS[i % OPTION_COLORS.length] },
+                style: { '--c': Attr.optionColor(a, o.id) },
                 on: {
                   click: () => {
                     const s = new Set(vals);

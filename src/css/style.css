@@ -2989,3 +2989,278 @@ body.touring .card-play {
 .cat-line .cat-add {
   margin-left: 0;
 }
+
+/* ---------- Читаемый текст на любом выбранном цвете ---------- */
+.cat-pill.on,
+.cat-chip.on,
+.opt.on,
+.fp-opt.on,
+.chip-solid {
+  color: var(--fg, #fff);
+}
+.cat-chip.on .cat-chip-dot,
+.opt.on .opt-dot {
+  background: var(--fg, #fff);
+  border-color: var(--fg, #fff);
+}
+.cat-pill.on .cat-pill-dot {
+  box-shadow: 0 0 0 2px var(--fg, #fff);
+}
+.chip-solid::before {
+  background: var(--fg, #fff);
+}
+
+/* ---------- Кнопка выбора цвета и палитра ---------- */
+.color-btn {
+  --c: var(--violet);
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--lilac);
+  position: relative;
+  transition: transform 0.25s var(--ease), box-shadow 0.15s;
+}
+.color-btn.lg {
+  width: 34px;
+  height: 34px;
+  border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
+}
+.color-btn::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--paper) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='m7 9.5 5 5 5-5' fill='none' stroke='%237b2ff7' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 11px no-repeat;
+  box-shadow: 0 1px 3px rgba(36, 9, 63, 0.3);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.color-btn:hover,
+.color-btn.open {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--violet);
+}
+.color-btn:hover::after,
+.color-btn.open::after {
+  opacity: 1;
+}
+.cp-pop {
+  width: 272px;
+  padding: 14px;
+}
+.cp-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a593c4;
+  margin: 0 0 8px 2px;
+}
+.cp-title + .cp-sv {
+  margin-top: 0;
+}
+.cp-presets {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.cp-preset {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--c);
+  transition: transform 0.2s var(--ease), box-shadow 0.15s;
+}
+.cp-preset:hover {
+  transform: scale(1.18);
+}
+.cp-preset.on {
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
+}
+.cp-sv {
+  --hue: #f00;
+  position: relative;
+  height: 130px;
+  border-radius: 14px;
+  background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, var(--hue));
+  cursor: crosshair;
+  touch-action: none;
+}
+.cp-sv-knob,
+.cp-hue-knob {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1.5px rgba(36, 9, 63, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.cp-hue {
+  position: relative;
+  height: 14px;
+  margin: 12px 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  cursor: pointer;
+  touch-action: none;
+}
+.cp-hue-knob {
+  top: 50%;
+}
+.cp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cp-preview {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 2px rgba(36, 9, 63, 0.1);
+}
+.cp-hex {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  border: 0;
+  outline: 0;
+  border-radius: 10px;
+  padding: 0 10px;
+  background: var(--canvas);
+  font: 700 13.5px Consolas, monospace;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.cp-hex:focus {
+  box-shadow: inset 0 0 0 2px var(--violet);
+}
+
+/* ---------- Перетаскивание за ручку ---------- */
+.drag-handle,
+.drag-spacer {
+  flex: none;
+  width: 28px;
+  height: 36px;
+}
+.drag-handle {
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #b4a3d4;
+  cursor: grab;
+  touch-action: none;
+  transition: background 0.15s, color 0.15s;
+}
+.drag-handle .ic {
+  width: 20px;
+  height: 20px;
+}
+.drag-handle:hover,
+.drag-handle:focus-visible {
+  color: var(--violet);
+  background: var(--lilac);
+}
+body.sorting,
+body.sorting * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+.dragging {
+  position: relative;
+  z-index: 5;
+  box-shadow: 0 18px 36px -12px rgba(36, 9, 63, 0.45), 0 0 0 2px var(--violet) !important;
+  background: var(--paper) !important;
+  border-radius: 18px;
+  transition: none !important;
+}
+.dragging .drag-handle {
+  color: var(--violet);
+  background: var(--lilac);
+}
+.attr-row,
+.cat-row {
+  padding-left: 6px;
+}
+.attr-row:hover {
+  transform: none;
+}
+.cat-row {
+  gap: 10px;
+}
+.opt-edit-row .color-btn {
+  margin: 0 6px 0 2px;
+}
+.opt-add .opt-dot.ghost {
+  width: 26px;
+  height: 26px;
+  margin: 0 6px 0 2px;
+  border-width: 2px;
+}
+.cat-new .color-btn {
+  margin: 0 4px;
+}
+
+/* ---------- Строка категорий: стрелки прокрутки ---------- */
+.cat-scroll {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+}
+.cat-line .cat-scroll .cat-strip {
+  flex: 1 1 auto;
+  mask-image: none;
+  scroll-behavior: smooth;
+}
+.cat-scroll.can-right .cat-strip {
+  mask-image: linear-gradient(90deg, #000 calc(100% - 70px), transparent calc(100% - 10px));
+}
+.cat-scroll.can-left .cat-strip {
+  mask-image: linear-gradient(90deg, transparent 10px, #000 70px);
+}
+.cat-scroll.can-left.can-right .cat-strip {
+  mask-image: linear-gradient(90deg, transparent 10px, #000 70px, #000 calc(100% - 70px), transparent calc(100% - 10px));
+}
+.cat-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  margin-top: -17px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--lime);
+  box-shadow: 0 4px 12px -4px rgba(36, 9, 63, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.25s var(--ease);
+}
+.cat-arrow .ic {
+  width: 18px;
+  height: 18px;
+}
+.cat-arrow.left {
+  left: -2px;
+}
+.cat-arrow.right {
+  right: -2px;
+}
+.cat-scroll.can-left .cat-arrow.left,
+.cat-scroll.can-right .cat-arrow.right {
+  opacity: 1;
+  pointer-events: auto;
+}
+.cat-arrow:hover {
+  transform: scale(1.12);
+}

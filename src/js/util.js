@@ -18,6 +18,8 @@ function h(tag, props, ...children) {
         for (const [sk, sv] of Object.entries(v)) {
           if (sk.startsWith('--')) el.style.setProperty(sk, sv);
           else el.style[sk] = sv;
+          // для любого «фирменного» цвета сразу подбираем читаемый цвет текста поверх него
+          if (sk === '--c' && typeof sv === 'string' && sv.startsWith('#')) el.style.setProperty('--fg', textOn(sv));
         }
       }
       else if (k === 'dataset') Object.assign(el.dataset, v);
@@ -125,6 +127,51 @@ function normalize(s) {
     .replace(/ё/g, 'е');
 }
 
+/* ---------- Цвета ---------- */
+function normHex(s) {
+  let x = String(s || '').trim().replace(/^#/, '').toLowerCase();
+  if (/^[0-9a-f]{3}$/.test(x)) x = x.split('').map((c) => c + c).join('');
+  return /^[0-9a-f]{6}$/.test(x) ? '#' + x : null;
+}
+function hexToRgb(hex) {
+  const x = normHex(hex) || '#7b2ff7';
+  return [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16));
+}
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+}
+function hexToHsv(hex) {
+  const [r, g, b] = hexToRgb(hex).map((v) => v / 255);
+  const mx = Math.max(r, g, b);
+  const mn = Math.min(r, g, b);
+  const d = mx - mn;
+  let hh = 0;
+  if (d) {
+    if (mx === r) hh = ((g - b) / d) % 6;
+    else if (mx === g) hh = (b - r) / d + 2;
+    else hh = (r - g) / d + 4;
+    hh *= 60;
+    if (hh < 0) hh += 360;
+  }
+  return { h: hh, s: mx ? d / mx : 0, v: mx };
+}
+function hsvToHex(hh, s, v) {
+  const c = v * s;
+  const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
+  const m = v - c;
+  const [r, g, b] = hh < 60 ? [c, x, 0] : hh < 120 ? [x, c, 0] : hh < 180 ? [0, c, x] : hh < 240 ? [0, x, c] : hh < 300 ? [x, 0, c] : [c, 0, x];
+  return rgbToHex((r + m) * 255, (g + m) * 255, (b + m) * 255);
+}
+/** Тёмный или белый текст — что лучше читается на этом цвете */
+function textOn(hex) {
+  const [r, g, b] = hexToRgb(hex).map((v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return L > 0.36 ? '#24093f' : '#ffffff';
+}
+
 /* ---------- Иконки (свои, нарисованные под приложение) ---------- */
 const ICONS = {
   plus: '<path d="M12 4.5v15M4.5 12h15" stroke-width="3" stroke-linecap="round"/>',
@@ -168,6 +215,10 @@ const ICONS = {
   hash: '<path d="M9.5 3.5 7.5 20.5M16.5 3.5l-2 17M4.5 9h16M3.5 15h16" stroke-width="2.1" stroke-linecap="round"/>',
   star: '<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" stroke-width="2" stroke-linejoin="round"/>',
   speed: '<path d="M4.5 16a8 8 0 1 1 15 0" stroke-width="2.2" stroke-linecap="round"/><path d="m12 15.5 4-5.5" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.6" fill="currentColor" stroke="none"/>',
+  grip: '<circle cx="9" cy="6" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.7" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.7" fill="currentColor" stroke="none"/>',
+  chevLeft: '<path d="m14.5 6-6 6 6 6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  chevRight: '<path d="m9.5 6 6 6-6 6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  pipette: '<path d="m13.5 6.5 4 4M15 5l1.6-1.6a2.1 2.1 0 0 1 3 3L18 8l1 1-2 2-6-6 2-2zM12.5 9.5 5 17v2.5h2.5l7.5-7.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   gear: '<path d="M10.3 3.6h3.4l.5 2.4 1.7.9 2.3-.9 1.7 2.9-1.8 1.6v2l1.8 1.6-1.7 2.9-2.3-.9-1.7.9-.5 2.4h-3.4l-.5-2.4-1.7-.9-2.3.9-1.7-2.9 1.8-1.6v-2L3.9 8.9l1.7-2.9 2.3.9 1.7-.9z" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.8" stroke-width="2"/>',
   telegram: '<path d="M20.5 4.5 3.6 11.1c-.8.3-.8 1.4 0 1.7l4.1 1.4 1.6 5c.2.7 1.1.9 1.6.4l2.3-2.2 4.3 3.1c.6.4 1.4.1 1.6-.6l2.7-13.3c.2-.9-.6-1.5-1.3-1.1z" stroke-width="1.9" stroke-linejoin="round"/><path d="m7.8 14.2 9.4-6.4-6.6 7.6" stroke-width="1.9" stroke-linejoin="round"/>',
   github: '<path d="M9 19.5c-4 1.2-4-2-5.6-2.5M14.6 21v-3.4c0-1 .1-1.4-.5-2 2.6-.3 5.4-1.3 5.4-5.8a4.5 4.5 0 0 0-1.2-3.1 4.2 4.2 0 0 0-.1-3.1s-1-.3-3.2 1.2a11 11 0 0 0-5.8 0C7 3.3 6 3.6 6 3.6a4.2 4.2 0 0 0-.1 3.1 4.5 4.5 0 0 0-1.2 3.1c0 4.5 2.8 5.5 5.4 5.8-.6.6-.6 1.1-.5 2V21" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',

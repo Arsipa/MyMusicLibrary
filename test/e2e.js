@@ -89,6 +89,58 @@ module.exports = async (win, getLib) => {
     await js(`[...document.querySelectorAll('.modal-x')].pop().click(); 1`);
     await sleep(300);
     ok(await js(`[...document.querySelectorAll('.cat-strip .cat-pill')].some(b=>b.textContent.includes('Для экзамена'))`), 'новая категория сразу появилась в строке');
+
+    // ---- Много категорий: стрелки прокрутки, до последней можно добраться
+    await js(`(async () => { for (const n of ['Джаз', 'Рок-н-ролл', 'Новогодние', 'Детские песни']) Lib.cats().push({ id: uid('cat_'), name: n, color: '#4a7bff' });
+      await Store.save('categories'); App.refresh(); return 1; })()`);
+    await sleep(400);
+    ok(await js(`document.querySelector('.cat-scroll').classList.contains('can-right') && !document.querySelector('.cat-scroll').classList.contains('can-left')`), 'при 9 категориях появилась стрелка «дальше»');
+    await shot('00h-cat-arrows');
+    for (let i = 0; i < 6; i++) {
+      await js(`document.querySelector('.cat-arrow.right').click(); 1`);
+      await sleep(350);
+    }
+    ok(await js(`(() => { const s=document.querySelector('.cat-strip'); const last=[...s.querySelectorAll('.cat-pill')].pop(); const r=last.getBoundingClientRect(), sr=s.getBoundingClientRect(); return r.right <= sr.right + 1 && document.querySelector('.cat-scroll').classList.contains('can-left'); })()`), 'стрелками можно докрутить до последней категории');
+    await js(`[...document.querySelectorAll('.cat-strip .cat-pill')].pop().click(); 1`);
+    await sleep(300);
+    ok(await js(`document.querySelector('.cat-strip').scrollLeft > 0 && [...document.querySelectorAll('.cat-strip .cat-pill')].pop().classList.contains('on')`), 'после выбора категории прокрутка строки не сбрасывается');
+    await js(`Filters.reset(); 1`);
+
+    // ---- Палитра цвета и перетаскивание в окне категорий
+    await js(`Categories.open(); 1`);
+    await sleep(400);
+    await js(`document.querySelector('.modal .cat-row .color-btn').click(); 1`);
+    await sleep(300);
+    ok(await js(`document.querySelectorAll('.cp-pop .cp-preset').length >= 12 && !!document.querySelector('.cp-pop .cp-sv')`), 'палитра открывается: готовые цвета + свободный выбор');
+    await js(`(() => { const r=document.querySelector('.cp-sv').getBoundingClientRect(); const o={bubbles:true,clientX:r.left+r.width*0.8,clientY:r.top+r.height*0.3,pointerId:1}; document.querySelector('.cp-sv').dispatchEvent(new PointerEvent('pointerdown',o)); document.querySelector('.cp-sv').dispatchEvent(new PointerEvent('pointerup',o)); return 1; })()`);
+    await shot('00i-color-picker');
+    await js(`(() => { const i=document.querySelector('.cp-hex'); i.value='#123abc'; i.dispatchEvent(new Event('input')); return 1; })()`);
+    await sleep(600);
+    let cats = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'categories.json'), 'utf8')).categories;
+    ok(cats[0].color === '#123abc', 'свой цвет категории сохраняется: ' + cats[0].color);
+    await js(`document.querySelector('.cp-pop .btn').click(); 1`);
+    await sleep(200);
+    const order0 = cats.map((c) => c.name);
+    // тянем первую категорию вниз на три строки
+    await js(`(async () => {
+      const rows=[...document.querySelectorAll('.modal .cat-row')]; const hd=rows[0].querySelector('.drag-handle').getBoundingClientRect();
+      const target=rows[3].getBoundingClientRect(); const x=hd.left+hd.width/2; let y=hd.top+hd.height/2;
+      rows[0].querySelector('.drag-handle').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,clientX:x,clientY:y,pointerId:1}));
+      const endY = target.top + target.height*0.8;
+      for (let k=1;k<=12;k++){ window.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y+(endY-y)*k/12,pointerId:1})); await new Promise(r=>setTimeout(r,16)); }
+      window.dispatchEvent(new PointerEvent('pointerup',{clientX:x,clientY:endY,pointerId:1})); return 1; })()`);
+    await sleep(500);
+    cats = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'categories.json'), 'utf8')).categories;
+    ok(cats[3].name === order0[0] && cats[0].name === order0[1], 'перетаскивание меняет порядок категорий: ' + cats.slice(0, 4).map((c) => c.name).join(', '));
+    // с клавиатуры: фокус на ручке и стрелка вверх
+    await js(`(() => { const hd=document.querySelectorAll('.modal .cat-row .drag-handle')[3]; hd.focus(); hd.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true})); return 1; })()`);
+    await sleep(500);
+    cats = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'categories.json'), 'utf8')).categories;
+    ok(cats[2].name === order0[0], 'порядок меняется и с клавиатуры (стрелки)');
+    await shot('00j-categories-dnd');
+    await js(`[...document.querySelectorAll('.modal-x')].pop().click(); 1`);
+    await sleep(300);
+    ok(await js(`[...document.querySelectorAll('.cat-strip .cat-pill')].slice(1,4).map(b=>b.textContent).join('|').includes(${JSON.stringify(order0[0])})`), 'новый порядок сразу виден на главном экране');
     // ---- О приложении
     await js(`document.getElementById('btnSettings').click(); 1`);
     await sleep(400);
@@ -201,11 +253,22 @@ module.exports = async (win, getLib) => {
       await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); const i=m.querySelector('.opt-add input'); i.value=${JSON.stringify(v)}; m.querySelector('.opt-add button').click(); return 1; })()`);
     }
     await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); m.querySelectorAll('.toggle input')[1].click(); return 1; })()`);
+    // цвет варианта из готовых и перенос «Ми минор» наверх с клавиатуры
+    await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); m.querySelector('.opt-edit-row .color-btn').click(); return 1; })()`);
+    await sleep(300);
+    await js(`document.querySelector('.cp-preset[data-c="#ff6b9a"]').click(); 1`);
+    await sleep(200);
+    for (let k = 0; k < 2; k++) {
+      await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); const hs=m.querySelectorAll('.opt-edit-row:not(.opt-add) .drag-handle'); const hd=[...hs].find(x=>x.closest('.opt-edit-row').querySelector('input').value==='Ми минор'); hd.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true})); return 1; })()`);
+      await sleep(200);
+    }
     await shot('09-attr-editor');
     await click('.modal-actions .btn', 'Сохранить');
     await sleep(400);
     const attrs = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'attributes.json'), 'utf8'));
     ok(attrs.attributes.some((a) => a.name === 'Тональность' && a.options.length === 3), 'новый атрибут сохранён в attributes.json');
+    const ton = attrs.attributes.find((a) => a.name === 'Тональность');
+    ok(ton.options[0].label === 'Ми минор' && ton.options.find((o) => o.label === 'До мажор').color === '#ff6b9a' && ton.options.every((o) => /^#[0-9a-f]{6}$/.test(o.color)), 'у вариантов сохраняются свой цвет и порядок: ' + ton.options.map((o) => o.label + ' ' + o.color).join(', '));
     await js(`document.querySelectorAll('.modal').forEach(()=>{}); [...document.querySelectorAll('.modal-x')].pop().click(); 1`);
     await sleep(300);
     // атрибут появился у старого трека

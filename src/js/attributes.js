@@ -27,7 +27,9 @@ const Attr = {
   },
 
   optionColor(attr, id) {
-    const idx = (attr.options || []).findIndex((x) => x.id === id);
+    const opts = attr.options || [];
+    const idx = opts.findIndex((x) => x.id === id);
+    if (idx >= 0 && opts[idx].color) return opts[idx].color;
     return OPTION_COLORS[(idx < 0 ? 0 : idx) % OPTION_COLORS.length];
   },
 
@@ -107,7 +109,7 @@ const Attr = {
               {
                 type: 'button',
                 dataset: { id: o.id },
-                style: { '--c': OPTION_COLORS[i % OPTION_COLORS.length] },
+                style: { '--c': Attr.optionColor(attr, o.id) },
                 on: {
                   click: () => {
                     if (multi) sel.has(o.id) ? sel.delete(o.id) : sel.add(o.id);
@@ -211,7 +213,8 @@ const AttributesManager = (() => {
         listBox.appendChild(
           h(
             'div.attr-row',
-            null,
+            { dataset: { id: a.id } },
+            dragHandle(),
             h('span.attr-type-ic', { icon: ATTR_TYPES[a.type].icon }),
             h(
               'div.attr-row-main',
@@ -231,8 +234,6 @@ const AttributesManager = (() => {
             h(
               'div.row-btns',
               null,
-              h('button.icon-btn.sm', { title: 'Выше', icon: 'up', disabled: i === 0, on: { click: () => move(i, -1) } }),
-              h('button.icon-btn.sm', { title: 'Ниже', icon: 'down', disabled: i === attrs.length - 1, on: { click: () => move(i, 1) } }),
               h('button.icon-btn.sm', { title: 'Изменить', icon: 'edit', on: { click: () => edit(a, render) } }),
               h('button.icon-btn.sm.danger', { title: 'Удалить', icon: 'trash', on: { click: () => remove(a, render) } })
             )
@@ -241,14 +242,16 @@ const AttributesManager = (() => {
       });
     }
 
-    async function move(i, d) {
-      const arr = Lib.attrs();
-      const [x] = arr.splice(i, 1);
-      arr.splice(i + d, 0, x);
-      await Store.save('attributes');
-      render();
-      App.refresh();
-    }
+    makeSortable(listBox, {
+      item: '.attr-row',
+      handle: '.drag-handle',
+      onMove: async (from, to) => {
+        moveItem(Lib.attrs(), from, to);
+        render();
+        await Store.save('attributes');
+        App.refresh();
+      },
+    });
     render();
     return m;
   }
@@ -321,6 +324,16 @@ const AttributesManager = (() => {
       clear(specific);
       if (draft.type === 'select' || draft.type === 'multiselect') {
         const list = h('div.opt-editor');
+        // у каждого варианта свой сохранённый цвет (раньше цвет зависел от порядка)
+        draft.options.forEach((o, i) => (o.color = o.color || OPTION_COLORS[i % OPTION_COLORS.length]));
+        makeSortable(list, {
+          item: '.opt-edit-row:not(.opt-add)',
+          handle: '.drag-handle',
+          onMove: (from, to) => {
+            moveItem(draft.options, from, to);
+            paint();
+          },
+        });
         const paint = () => {
           clear(list);
           draft.options.forEach((o, i) => {
@@ -335,20 +348,9 @@ const AttributesManager = (() => {
               h(
                 'div.opt-edit-row',
                 null,
-                h('span.opt-dot', { style: { '--c': OPTION_COLORS[i % OPTION_COLORS.length] } }),
+                dragHandle(),
+                colorButton(o.color, (c) => (o.color = c), { title: 'Цвет варианта' }).el,
                 inp,
-                h('button.icon-btn.sm', {
-                  type: 'button',
-                  title: 'Выше',
-                  icon: 'up',
-                  disabled: i === 0,
-                  on: {
-                    click: () => {
-                      draft.options.splice(i - 1, 0, draft.options.splice(i, 1)[0]);
-                      paint();
-                    },
-                  },
-                }),
                 h('button.icon-btn.sm.danger', {
                   type: 'button',
                   title: 'Убрать вариант',
@@ -379,11 +381,11 @@ const AttributesManager = (() => {
           const addOpt = () => {
             const v = addInp.value.trim();
             if (!v) return;
-            draft.options.push({ id: uid('o_'), label: v });
+            draft.options.push({ id: uid('o_'), label: v, color: OPTION_COLORS[draft.options.length % OPTION_COLORS.length] });
             paint();
             list.querySelector('.opt-add input').focus();
           };
-          list.appendChild(h('div.opt-edit-row.opt-add', null, h('span.opt-dot.ghost'), addInp, h('button.btn.btn-soft.sm', { type: 'button', text: 'Добавить', on: { click: addOpt } })));
+          list.appendChild(h('div.opt-edit-row.opt-add', null, h('span.drag-spacer'), h('span.opt-dot.ghost'), addInp, h('button.btn.btn-soft.sm', { type: 'button', text: 'Добавить', on: { click: addOpt } })));
         };
         paint();
         specific.appendChild(h('label.field-label', { text: 'Варианты' }));

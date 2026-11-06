@@ -251,7 +251,7 @@ const UI = (() => {
     return document.getElementById('menuLayer').classList.contains('open');
   }
   document.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.ctx-menu') || e.target.closest('.dd-btn.open')) return;
+    if (e.target.closest('.ctx-menu') || e.target.closest('.dd-btn.open') || e.target.closest('.color-btn.open')) return;
     closeMenu();
   });
   window.addEventListener('blur', closeMenu);

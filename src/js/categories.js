@@ -18,12 +18,12 @@ const Categories = (() => {
       on: { keydown: (e) => e.key === 'Enter' && add() },
     });
     let color = CATEGORY_COLORS[Lib.cats().length % CATEGORY_COLORS.length];
-    const swatches = colorPicker(color, (c) => (color = c));
+    const swatches = colorButton(color, (c) => (color = c), { title: 'Цвет новой категории', size: 'lg' });
 
     const body = h(
       'div',
       null,
-      h('div.cat-new', null, nameInp, swatches.el, h('button.btn.btn-primary', { type: 'button', on: { click: () => add() } }, h('span', { icon: 'plus' }), 'Создать')),
+      h('div.cat-new', null, swatches.el, nameInp, h('button.btn.btn-primary', { type: 'button', on: { click: () => add() } }, h('span', { icon: 'plus' }), 'Создать')),
       list
     );
     UI.openModal({
@@ -74,34 +74,39 @@ const Categories = (() => {
             },
           },
         });
-        const cp = colorPicker(c.color, async (col) => {
+        const row = h('div.cat-row', { dataset: { id: c.id }, style: { '--c': c.color } });
+        const cp = colorButton(c.color, (col) => {
           c.color = col;
-          await Store.save('categories');
-          App.refresh();
-          render();
-        }, true);
-        list.appendChild(
-          h(
-            'div.cat-row',
-            { style: { '--c': c.color } },
-            h('span.cat-blob'),
-            inp,
-            cp.el,
-            h('span.cat-count', { text: `${n} ${plural(n, 'трек', 'трека', 'треков')}` }),
-            h('button.icon-btn.sm', { title: 'Выше', icon: 'up', disabled: i === 0, on: { click: () => move(i, -1) } }),
-            h('button.icon-btn.sm.danger', { title: 'Удалить', icon: 'trash', on: { click: () => remove(c) } })
-          )
+          row.style.setProperty('--c', col);
+          saveColors();
+        }, { title: 'Цвет категории', size: 'lg' });
+        row.append(
+          dragHandle(),
+          cp.el,
+          inp,
+          h('span.cat-count', { text: `${n} ${plural(n, 'трек', 'трека', 'треков')}` }),
+          h('button.icon-btn.sm.danger', { title: 'Удалить', icon: 'trash', on: { click: () => remove(c) } })
         );
+        list.appendChild(row);
       });
     }
 
-    async function move(i, d) {
-      const arr = Lib.cats();
-      arr.splice(i + d, 0, arr.splice(i, 1)[0]);
+    // цвет меняется плавно при перетаскивании по палитре — сохраняем, когда пользователь остановился
+    const saveColors = debounce(async () => {
       await Store.save('categories');
-      render();
       App.refresh();
-    }
+    }, 250);
+
+    makeSortable(list, {
+      item: '.cat-row',
+      handle: '.drag-handle',
+      onMove: async (from, to) => {
+        moveItem(Lib.cats(), from, to);
+        render();
+        await Store.save('categories');
+        App.refresh();
+      },
+    });
 
     async function remove(c) {
       const n = count(c.id);
@@ -198,32 +203,6 @@ const Categories = (() => {
       });
       inp.addEventListener('keydown', (e) => e.key === 'Enter' && finish(m));
     });
-  }
-
-  function colorPicker(current, onPick, compact) {
-    const el = h('div.swatches' + (compact ? '.compact' : ''));
-    const set = (c) => {
-      current = c;
-      el.querySelectorAll('.swatch').forEach((s) => s.classList.toggle('on', s.dataset.c === c));
-    };
-    for (const c of CATEGORY_COLORS) {
-      el.appendChild(
-        h('button.swatch', {
-          type: 'button',
-          dataset: { c },
-          title: 'Цвет',
-          style: { '--c': c },
-          on: {
-            click: () => {
-              set(c);
-              onPick(c);
-            },
-          },
-        })
-      );
-    }
-    set(current);
-    return { el, set };
   }
 
   return { open, picker, count };
