@@ -82,13 +82,13 @@ const Attr = {
     const changed = () => onChange && onChange();
     switch (attr.type) {
       case 'text': {
-        const inp = h('input.input', { type: 'text', value: value ?? '', maxlength: 300, on: { input: changed } });
-        return { el: inp, get: () => inp.value.trim(), focus: () => inp.focus() };
+        const inp = h('input.input', { type: 'text', value: value ?? '', on: { input: changed } });
+        return { el: withCounter(inp, LIMITS.attrText), get: () => cleanLine(inp.value, LIMITS.attrText), focus: () => inp.focus() };
       }
       case 'textarea': {
         const ta = h('textarea.input.textarea', { rows: 4, on: { input: changed } });
         ta.value = value ?? '';
-        return { el: ta, get: () => ta.value.trim(), focus: () => ta.focus() };
+        return { el: withCounter(ta, LIMITS.attrTextarea), get: () => cleanText(ta.value, LIMITS.attrTextarea), focus: () => ta.focus() };
       }
       case 'select':
       case 'multiselect': {
@@ -144,6 +144,7 @@ const Attr = {
         return {
           el: inp,
           get: () => (inp.value === '' ? null : Number(inp.value)),
+          bad: () => inp.validity.badInput,
           focus: () => inp.focus(),
         };
       }
@@ -287,7 +288,7 @@ const AttributesManager = (() => {
     if (!draft.options) draft.options = [];
     const originalType = existing ? existing.type : null;
 
-    const nameInp = h('input.input', { type: 'text', value: draft.name, placeholder: 'Например: Тональность', maxlength: 60, autofocus: true });
+    const nameInp = h('input.input', { type: 'text', value: draft.name, placeholder: 'Например: Тональность', maxlength: LIMITS.attrName, autofocus: true });
     const typeGrid = h('div.type-grid');
     const specific = h('div.attr-specific');
     const reqToggle = toggle('Обязательно заполнять при добавлении трека', draft.required);
@@ -341,7 +342,7 @@ const AttributesManager = (() => {
               type: 'text',
               value: o.label,
               placeholder: 'Вариант',
-              maxlength: 60,
+              maxlength: LIMITS.optionLabel,
               on: { input: () => (o.label = inp.value) },
             });
             list.appendChild(
@@ -368,7 +369,7 @@ const AttributesManager = (() => {
           const addInp = h('input.input', {
             type: 'text',
             placeholder: 'Новый вариант — и Enter',
-            maxlength: 60,
+            maxlength: LIMITS.optionLabel,
             on: {
               keydown: (e) => {
                 if (e.key === 'Enter') {
@@ -379,7 +380,7 @@ const AttributesManager = (() => {
             },
           });
           const addOpt = () => {
-            const v = addInp.value.trim();
+            const v = cleanLine(addInp.value, LIMITS.optionLabel);
             if (!v) return;
             draft.options.push({ id: uid('o_'), label: v, color: OPTION_COLORS[draft.options.length % OPTION_COLORS.length] });
             paint();
@@ -435,13 +436,13 @@ const AttributesManager = (() => {
 
     async function submit() {
       err.hidden = true;
-      draft.name = nameInp.value.trim();
+      draft.name = cleanLine(nameInp.value, LIMITS.attrName);
       draft.required = reqToggle.get();
       draft.showOnCard = cardToggle.get();
       if (!draft.name) return fail('Дайте атрибуту название.');
       if (Lib.attrs().some((a) => a.id !== draft.id && normalize(a.name) === normalize(draft.name))) return fail('Атрибут с таким названием уже есть.');
       if (draft.type === 'select' || draft.type === 'multiselect') {
-        draft.options = draft.options.map((o) => ({ ...o, label: o.label.trim() })).filter((o) => o.label);
+        draft.options = draft.options.map((o) => ({ ...o, label: cleanLine(o.label, LIMITS.optionLabel) })).filter((o) => o.label);
         if (!draft.options.length) return fail('Добавьте хотя бы один вариант.');
         const labels = draft.options.map((o) => normalize(o.label));
         if (new Set(labels).size !== labels.length) return fail('Варианты не должны повторяться.');

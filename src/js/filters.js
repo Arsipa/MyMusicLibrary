@@ -29,6 +29,7 @@ const Filters = (() => {
       searchInp = h('input.search-input', {
         type: 'search',
         placeholder: 'Найти песню, заметку, этап…',
+        maxlength: LIMITS.search,
         on: {
           input: debounce(() => {
             state.search = searchInp.value;

@@ -182,13 +182,41 @@ module.exports = async (win, getLib) => {
         [...f('language').querySelectorAll('.opt')].find(b=>b.textContent.includes(${JSON.stringify(lang)})).click();
         [...f('knowledge').querySelectorAll('.scale-cell')][${knowledge - 1}].click();
         const ta = f('learning_stage').querySelector('textarea'); ta.value = ${JSON.stringify(stage)};
-        const n = document.querySelectorAll('.track-form > textarea'); n[n.length-1].value = ${JSON.stringify(notes)};
+        const n = document.querySelectorAll('.track-form > .field-wrap > textarea'); n[n.length-1].value = ${JSON.stringify(notes)};
         return 1; })()`);
     };
     await fill('Грустная', 'Русский', 7, 'Первый куплет выучен, припев пока нестабильный', 'Работаю над вторым куплетом, необходимо ещё раз разобрать переход ко второму куплету и бридж. Дыхание!');
     await js(`document.querySelector('.cat-chip').click(); 1`);
+
+    // «Послушать» превращается в «Пауза» и обратно
+    await js(`document.querySelector('.listen-btn').click(); 1`);
+    await sleep(800);
+    ok(await js(`document.querySelector('.listen-btn').textContent.trim() === 'Пауза' && document.querySelector('.listen-btn').classList.contains('on')`), 'в форме «Послушать» меняется на «Пауза»');
+    await js(`document.querySelector('.listen-btn').click(); 1`);
+    await sleep(400);
+    ok(await js(`document.querySelector('.listen-btn').textContent.trim() === 'Послушать'`), '…и обратно на «Послушать» после паузы');
+    await js(`Player.stop(); 1`);
+
+    // ограничения длины
+    ok(await js(`document.querySelector('.input-title').maxLength === LIMITS.trackTitle && LIMITS.trackTitle === 120`), 'название ограничено 120 символами');
+    ok(await js(`[...document.querySelectorAll('.track-form .char-count')].some(c => c.textContent.endsWith('/ 1500'))`), 'у комментария есть счётчик «… / 1500»');
+    await js(`(() => { const i=document.querySelector('.input-title'); i.value='Кукушка'.padEnd(118,'!'); i.dispatchEvent(new Event('input',{bubbles:true})); return 1; })()`);
+    ok(await js(`(() => { const c=document.querySelector('.input-title').parentNode.querySelector('.char-count'); return !c.hidden && c.classList.contains('near'); })()`), 'у длинного названия появляется предупреждающий счётчик');
+    await js(`(() => { const i=document.querySelector('.input-title'); i.value='  Кукушка  '; i.dispatchEvent(new Event('input',{bubbles:true})); return 1; })()`);
+
+    // ссылка на клип: сначала неправильная, потом без https://
+    const setClip = (v) => js(`(() => { const i=document.querySelector('.track-form input[type=url]'); i.value=${JSON.stringify(v)}; i.dispatchEvent(new Event('input',{bubbles:true})); return 1; })()`);
+    await setClip('просто какой-то текст');
+    await click('.modal-actions .btn', 'Сохранить трек');
+    await sleep(400);
+    ok(await js(`document.querySelector('.track-form input[type=url]').classList.contains('bad') && !!document.querySelector('.track-form').textContent.includes('не похоже на ссылку')`), 'неправильная ссылка на клип не сохраняется, есть понятная ошибка');
+    await shot('04b-clip-error');
+    await setClip('youtube.com/watch?v=dQw4w9WgXcQ');
     await click('.modal-actions .btn', 'Сохранить трек');
     await waitFor(`document.querySelectorAll('.track-form').length === 1 && document.querySelector('.modal-title').textContent.includes('2 из 4')`);
+    const saved1 = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'library.json'), 'utf8')).tracks.find((t) => t.title === 'Кукушка');
+    ok(saved1 && saved1.clipUrl === 'https://youtube.com/watch?v=dQw4w9WgXcQ', 'ссылка без https:// дополнена и сохранена: ' + (saved1 && saved1.clipUrl));
+    ok(saved1 && saved1.title === 'Кукушка', 'лишние пробелы в названии убраны');
 
     // второй — «заполнить позже»
     await click('.modal-actions .btn', 'Заполнить позже');
@@ -234,6 +262,19 @@ module.exports = async (win, getLib) => {
     await js(`App.openDetail(${JSON.stringify(firstId)}); 1`);
     await sleep(400);
     await shot('07-detail');
+    const kukId = await js(`Lib.tracks().find(t => t.title === 'Кукушка').id`);
+    ok(await js(`!!document.querySelector('.card[data-id="${kukId}"] .card-clip')`), 'на карточке песни с клипом есть кнопка-ссылка');
+    await js(`App.openDetail(${JSON.stringify(kukId)}); 1`);
+    await sleep(400);
+    await shot('07b-detail-clip');
+    ok(await js(`!!document.querySelector('.d-clip') && document.querySelector('.d-clip').textContent.includes('youtube.com')`), 'на странице песни есть кнопка «Смотреть клип · youtube.com»');
+    ok(await js(`window.api.openUrl(Lib.track(${JSON.stringify(kukId)}).clipUrl).then(r => r.ok)`), 'ссылка на клип открывается (в тесте — без браузера)');
+    await js(`document.querySelector('.d-clip').click(); 1`);
+    await sleep(300);
+    ok(!(await js(`[...document.querySelectorAll('.toast')].some(t => t.textContent.includes('Не получилось открыть'))`)), 'нажатие на «Смотреть клип» проходит без ошибок');
+    await js(`App.openDetail(${JSON.stringify(firstId)}); 1`);
+    await sleep(400);
+    ok(!(await js(`window.api.openUrl('javascript:alert(1)').then(r => r.ok)`)), 'опасные ссылки (javascript:) не открываются');
     // быстрая оценка на странице
     await js(`document.querySelectorAll('.scale-display.interactive .scale-dot')[8].click(); 1`);
     await sleep(400);

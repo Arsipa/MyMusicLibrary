@@ -389,6 +389,19 @@ function registerIpc() {
   handle('app:info', async () => ({ version: app.getVersion() }));
   // внешние ссылки — только заранее известные адреса, открываются в браузере по умолчанию
   const ALLOWED_LINKS = ['https://github.com/Arsipa/MyMusicLibrary', 'https://t.me/arsipa'];
+  // ссылка на клип, которую ввёл пользователь: открываем только обычные http(s)-адреса в браузере по умолчанию
+  handle('app:open-url', async (url) => {
+    let u;
+    try {
+      u = new URL(String(url));
+    } catch (_) {
+      throw new LibError('bad_name');
+    }
+    if ((u.protocol !== 'https:' && u.protocol !== 'http:') || u.href.length > 2000) throw new LibError('bad_name');
+    if (TEST) return u.href;
+    await shell.openExternal(u.href);
+    return u.href;
+  });
   handle('app:open-link', async (url) => {
     if (typeof url !== 'string' || !ALLOWED_LINKS.some((a) => url === a || url.startsWith(a + '/'))) throw new LibError('bad_name');
     if (TEST) return url; // автотест не открывает настоящий браузер

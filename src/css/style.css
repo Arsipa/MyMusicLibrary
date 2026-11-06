@@ -3264,3 +3264,90 @@ body.sorting * {
 .cat-arrow:hover {
   transform: scale(1.12);
 }
+
+/* ---------- Счётчик символов ---------- */
+.field-wrap {
+  position: relative;
+}
+.char-count {
+  position: absolute;
+  right: 12px;
+  bottom: 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #a593c4;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  background: inherit;
+}
+.field-wrap:not(.multi) .char-count {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: var(--paper);
+}
+.field-wrap.multi .input {
+  padding-bottom: 28px;
+}
+.char-count.near {
+  color: var(--danger);
+}
+.input.bad {
+  box-shadow: inset 0 0 0 2px var(--danger);
+}
+.label-note {
+  font-weight: 600;
+}
+
+/* «Послушать» ⇄ «Пауза» в форме */
+.listen-btn.on {
+  background: var(--coral);
+  color: #fff;
+}
+
+/* ---------- Ссылка на клип ---------- */
+.d-clip {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 0 16px;
+  padding: 8px 16px 8px 8px;
+  border-radius: 18px 26px 18px 26px;
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 4px 4px 0 var(--coral);
+  transition: transform 0.25s var(--ease), box-shadow 0.2s;
+}
+.d-clip:hover {
+  transform: translateY(-2px) rotate(-1deg);
+  box-shadow: 6px 6px 0 var(--coral);
+}
+.d-clip-ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--coral);
+}
+.d-clip-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.2;
+}
+.d-clip-text span {
+  font-size: 12.5px;
+  color: var(--lavender);
+}
+.d-clip > span:last-child {
+  color: var(--lime);
+}
+.card-clip {
+  color: var(--coral);
+}
+.card-clip:hover:not(:disabled) {
+  background: #ffe1ea;
+}

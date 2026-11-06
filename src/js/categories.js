@@ -13,7 +13,7 @@ const Categories = (() => {
     const nameInp = h('input.input', {
       type: 'text',
       placeholder: 'Например: Для концерта',
-      maxlength: 50,
+      maxlength: LIMITS.categoryName,
       autofocus: true,
       on: { keydown: (e) => e.key === 'Enter' && add() },
     });
@@ -36,7 +36,7 @@ const Categories = (() => {
     });
 
     async function add() {
-      const name = nameInp.value.trim();
+      const name = cleanLine(nameInp.value, LIMITS.categoryName);
       if (!name) return nameInp.focus();
       if (Lib.cats().some((c) => normalize(c.name) === normalize(name))) {
         UI.toast('Такая категория уже есть', { kind: 'error' });
@@ -59,10 +59,10 @@ const Categories = (() => {
         const inp = h('input.input.cat-name', {
           type: 'text',
           value: c.name,
-          maxlength: 50,
+          maxlength: LIMITS.categoryName,
           on: {
             change: async () => {
-              const v = inp.value.trim();
+              const v = cleanLine(inp.value, LIMITS.categoryName);
               if (!v || Lib.cats().some((x) => x.id !== c.id && normalize(x.name) === normalize(v))) {
                 inp.value = c.name;
                 UI.toast(v ? 'Такая категория уже есть' : 'Название не может быть пустым', { kind: 'error' });
@@ -187,11 +187,11 @@ const Categories = (() => {
 
   function promptName() {
     return new Promise((resolve) => {
-      const inp = h('input.input', { type: 'text', placeholder: 'Название категории', maxlength: 50, autofocus: true });
+      const inp = h('input.input', { type: 'text', placeholder: 'Название категории', maxlength: LIMITS.categoryName, autofocus: true });
       let done = false;
       const finish = (m) => {
         done = true;
-        resolve(inp.value.trim() || null);
+        resolve(cleanLine(inp.value, LIMITS.categoryName) || null);
         m.close('force');
       };
       const m = UI.openModal({

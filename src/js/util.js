@@ -117,7 +117,8 @@ function titleFromFile(name) {
       .replace(/[_]+/g, ' ')
       .replace(/\s*[\(\[]?(минус|minus|instrumental|karaoke|караоке)[\)\]]?\s*/gi, ' ')
       .replace(/\s{2,}/g, ' ')
-      .trim() || 'Без названия'
+      .trim()
+      .slice(0, 120) || 'Без названия'
   );
 }
 
@@ -125,6 +126,89 @@ function normalize(s) {
   return String(s || '')
     .toLowerCase()
     .replace(/ё/g, 'е');
+}
+
+/* ---------- Ограничения длины полей ---------- */
+/*
+ * Подобраны под реальное использование:
+ *  - название: «Исполнитель — Песня (live, акустическая версия)» ≈ 60–80 символов, берём с запасом;
+ *  - комментарий и многострочные поля: заметки к репетиции на несколько абзацев (≈ полстраницы);
+ *  - названия атрибутов, вариантов и категорий должны помещаться на кнопках и метках.
+ */
+const LIMITS = {
+  trackTitle: 120,
+  notes: 1500,
+  attrText: 120,
+  attrTextarea: 1500,
+  attrName: 40,
+  optionLabel: 40,
+  categoryName: 40,
+  clipUrl: 500,
+  search: 100,
+  number: 1e9,
+};
+
+/** Поле со счётчиком символов. Для однострочных полей счётчик появляется ближе к пределу. */
+function withCounter(input, max) {
+  input.maxLength = max;
+  const counter = h('span.char-count');
+  const multi = input.tagName === 'TEXTAREA';
+  const update = () => {
+    const n = input.value.length;
+    counter.textContent = `${n} / ${max}`;
+    counter.classList.toggle('near', n >= max * 0.9);
+    counter.hidden = !multi && n < max * 0.7;
+  };
+  input.addEventListener('input', update);
+  update();
+  return h('div.field-wrap' + (multi ? '.multi' : ''), null, input, counter);
+}
+
+/** Однострочный текст: без переносов и управляющих символов, без лишних пробелов, не длиннее max. */
+function cleanLine(s, max) {
+  return String(s || '')
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .slice(0, max);
+}
+/** Многострочный текст: сохраняем переносы строк, убираем прочие управляющие символы. */
+function cleanText(s, max) {
+  return String(s || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '')
+    .replace(/\n{4,}/g, '\n\n\n')
+    .trim()
+    .slice(0, max);
+}
+
+/**
+ * Ссылка на клип: принимаем адреса http(s), «youtube.com/…» без https:// дополняем сами.
+ * Возвращает { url } , { url: null } для пустого поля или { error }.
+ */
+function parseClipUrl(raw) {
+  let s = String(raw || '').trim();
+  if (!s) return { url: null };
+  if (s.length > LIMITS.clipUrl) return { error: `Ссылка слишком длинная (больше ${LIMITS.clipUrl} символов).` };
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = 'https://' + s.replace(/^\/+/, '');
+  let u;
+  try {
+    u = new URL(s);
+  } catch (_) {
+    return { error: 'Это не похоже на ссылку. Скопируйте адрес клипа из браузера целиком.' };
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return { error: 'Подойдут только обычные ссылки на сайты (http или https).' };
+  if (!u.hostname.includes('.') || /\s/.test(s)) return { error: 'Это не похоже на ссылку. Скопируйте адрес клипа из браузера целиком.' };
+  return { url: u.href };
+}
+
+/** Короткое имя сайта для подписи: youtube.com, vk.com… */
+function siteName(url) {
+  try {
+    return new URL(url).hostname.replace(/^(www|m)\./, '');
+  } catch (_) {
+    return '';
+  }
 }
 
 /* ---------- Цвета ---------- */
@@ -215,6 +299,7 @@ const ICONS = {
   hash: '<path d="M9.5 3.5 7.5 20.5M16.5 3.5l-2 17M4.5 9h16M3.5 15h16" stroke-width="2.1" stroke-linecap="round"/>',
   star: '<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" stroke-width="2" stroke-linejoin="round"/>',
   speed: '<path d="M4.5 16a8 8 0 1 1 15 0" stroke-width="2.2" stroke-linecap="round"/><path d="m12 15.5 4-5.5" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.6" fill="currentColor" stroke="none"/>',
+  link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2" stroke-width="2.2" stroke-linecap="round"/>',
   grip: '<circle cx="9" cy="6" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.7" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.7" fill="currentColor" stroke="none"/>',
   chevLeft: '<path d="m14.5 6-6 6 6 6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
   chevRight: '<path d="m9.5 6 6 6-6 6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',

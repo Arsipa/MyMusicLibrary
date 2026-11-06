@@ -239,6 +239,15 @@ const App = (() => {
               h('span', { icon: t.hasVideo ? 'video' : 'note' }),
               h('span', { text: [t.originalFileName, t.duration ? fmtTime(t.duration) : null, fmtSize(t.size)].filter(Boolean).join(' · ') })
             ),
+            t.clipUrl
+              ? h(
+                  'button.d-clip',
+                  { title: t.clipUrl, on: { click: () => openClip(t) } },
+                  h('span.d-clip-ic', { icon: 'video' }),
+                  h('span.d-clip-text', null, h('b', { text: 'Смотреть клип' }), h('span', { text: siteName(t.clipUrl) })),
+                  h('span', { icon: 'open' })
+                )
+              : null,
             missing
               ? h('div.note-warn', null, h('span', { icon: 'warn' }), 'Музыкальный файл не найден. ', h('button.link-btn', { text: 'Указать файл заново', on: { click: () => Tracks.replaceFile(t.id) } }))
               : null,

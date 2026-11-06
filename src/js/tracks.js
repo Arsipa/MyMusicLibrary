@@ -1,6 +1,12 @@
 'use strict';
 /* Треки: карточки, добавление, форма атрибутов, редактирование, удаление, корзина. */
 
+/** Открыть ссылку на клип в браузере */
+async function openClip(t) {
+  const r = await window.api.openUrl(t.clipUrl);
+  if (!r.ok) UI.toast('Не получилось открыть ссылку. Проверьте её в карточке песни.', { kind: 'error' });
+}
+
 const Cards = (() => {
   function art(t, mini) {
     const a = artFor(t.id);
@@ -109,6 +115,7 @@ const Cards = (() => {
           'div.card-foot',
           null,
           h('span.card-dur', { text: t.duration ? fmtTime(t.duration) : '' }),
+          t.clipUrl ? h('button.icon-btn.sm.card-clip', { title: 'Открыть клип: ' + siteName(t.clipUrl), 'aria-label': 'Открыть клип', icon: 'link', on: { click: () => openClip(t) } }) : null,
           h('button.card-open', { on: { click: () => App.openDetail(t.id) } }, 'Подробнее', h('span', { icon: 'back' })),
           h('button.icon-btn.sm.card-more', { title: 'Ещё', icon: 'more', on: { click: (e) => menuFor(t.id, e.currentTarget) } })
         )
@@ -251,7 +258,7 @@ const Tracks = (() => {
       const originalCover = t.cover;
       let result = null;
 
-      const titleInp = h('input.input.input-title', { type: 'text', value: t.title, maxlength: 200, placeholder: 'Название песни' });
+      const titleInp = h('input.input.input-title', { type: 'text', value: t.title, placeholder: 'Название песни' });
       const titleErr = h('p.field-error', { hidden: true });
       const fields = [];
       const attrsBox = h('div.form-attrs');
@@ -259,6 +266,7 @@ const Tracks = (() => {
         const f = Attr.field(a, t.attributes[a.id], { onChange: () => (dirty = true) });
         const err = h('p.field-error', { hidden: true });
         const wasEmpty = Attr.isEmpty(a, t.attributes[a.id]);
+        f.err = err;
         const row = h(
           'div.form-field' + (a.type === 'textarea' || a.type === 'scale' ? '.wide' : ''),
           { dataset: { attr: a.id } },
@@ -274,6 +282,8 @@ const Tracks = (() => {
       const cats = Categories.picker(t.categories);
       const notes = h('textarea.input.textarea', { rows: 3, placeholder: 'Любые мысли: что получается, над чем поработать…' });
       notes.value = t.notes || '';
+      const clipInp = h('input.input', { type: 'url', value: t.clipUrl || '', placeholder: 'Например: https://www.youtube.com/watch?v=…', spellcheck: 'false' });
+      const clipErr = h('p.field-error', { hidden: true });
 
       const coverBox = h('div.cover-box');
       const paintCover = () => {
@@ -306,6 +316,17 @@ const Tracks = (() => {
       }
       paintCover();
 
+      // «Послушать» ⇄ «Пауза» — следим за общим плеером, пока открыта форма
+      const listenBtn = h('button.btn.btn-soft.sm.listen-btn', { type: 'button', on: { click: () => Player.toggle(t.id) } });
+      const paintListen = () => {
+        const playing = Player.isPlaying(t.id);
+        listenBtn.innerHTML = icon(playing ? 'pause' : 'play');
+        listenBtn.append(playing ? 'Пауза' : 'Послушать');
+        listenBtn.classList.toggle('on', playing);
+      };
+      paintListen();
+      const stopListening = Player.onChange(paintListen);
+
       const dups = isNew ? duplicatesOf(t) : [];
       const fileInfo = h(
         'div.file-strip',
@@ -317,7 +338,7 @@ const Tracks = (() => {
           h('b', { text: t.originalFileName || 'Файл' }),
           h('span', { text: [(t.fileName.split('.').pop() || '').toUpperCase(), fmtSize(t.size), t.duration ? fmtTime(t.duration) : null, t.hasVideo ? 'с видео' : null].filter(Boolean).join(' · ') })
         ),
-        h('button.btn.btn-soft.sm', { type: 'button', on: { click: () => Player.toggle(t.id) } }, h('span', { icon: 'play' }), 'Послушать')
+        listenBtn
       );
 
       const body = h(
@@ -325,13 +346,21 @@ const Tracks = (() => {
         { on: { input: () => (dirty = true), click: (e) => e.target.closest('.opt, .scale-cell, .cat-chip') && (dirty = true) } },
         fileInfo,
         dups.length ? h('div.note-warn', null, h('span', { icon: 'warn' }), `Похоже, такой трек уже есть: «${dups[0].title}». Ничего страшного — файлы хранятся отдельно, просто проверьте, не дубль ли это.`) : null,
-        h('div.form-top', null, h('div.form-field', null, h('div.field-label', null, 'Название', h('b.req', { text: '*' })), titleInp, titleErr), coverBox),
+        h('div.form-top', null, h('div.form-field', null, h('div.field-label', null, 'Название', h('b.req', { text: '*' })), withCounter(titleInp, LIMITS.trackTitle), titleErr), coverBox),
         h('h4.form-section', { text: 'Характеристики' }),
         attrsBox,
         h('h4.form-section', { text: 'Категории' }),
         cats.el,
         h('h4.form-section', { text: 'Комментарий' }),
-        notes
+        withCounter(notes, LIMITS.notes),
+        h('h4.form-section', { text: 'Клип' }),
+        h(
+          'div.form-field',
+          null,
+          h('div.field-label', null, h('span', { icon: 'link' }), 'Ссылка на клип или видео', h('span.muted.small.label-note', { text: '— необязательно' })),
+          withCounter(clipInp, LIMITS.clipUrl),
+          clipErr
+        )
       );
 
       const m = UI.openModal({
@@ -361,6 +390,7 @@ const Tracks = (() => {
       });
 
       function finish(res) {
+        stopListening();
         result = res;
         m.close('force');
         resolve(res);
@@ -423,12 +453,21 @@ const Tracks = (() => {
 
       function collect(validate) {
         let firstBad = null;
-        const title = titleInp.value.trim();
+        const title = cleanLine(titleInp.value, LIMITS.trackTitle);
         titleErr.hidden = true;
         if (validate && !title) {
           titleErr.textContent = 'Без названия никак :)';
           titleErr.hidden = false;
           firstBad = firstBad || titleInp;
+        }
+        const clip = parseClipUrl(clipInp.value);
+        clipErr.hidden = true;
+        clipInp.classList.remove('bad');
+        if (validate && clip.error) {
+          clipErr.textContent = clip.error;
+          clipErr.hidden = false;
+          clipInp.classList.add('bad');
+          firstBad = firstBad || clipInp;
         }
         const values = {};
         for (const { a, f, err, row, wasEmpty } of fields) {
@@ -442,8 +481,19 @@ const Tracks = (() => {
             row.classList.add('bad');
             firstBad = firstBad || row;
           }
+          if (validate && a.type === 'number' && f.bad && f.bad()) {
+            err.textContent = 'Введите число, например 120 или 2,5';
+            err.hidden = false;
+            row.classList.add('bad');
+            firstBad = firstBad || row;
+          }
           if (validate && !empty && a.type === 'number') {
-            if ((a.min !== null && a.min !== undefined && v < a.min) || (a.max !== null && a.max !== undefined && v > a.max)) {
+            if (Math.abs(v) > LIMITS.number) {
+              err.textContent = 'Слишком большое число';
+              err.hidden = false;
+              row.classList.add('bad');
+              firstBad = firstBad || row;
+            } else if ((a.min !== null && a.min !== undefined && v < a.min) || (a.max !== null && a.max !== undefined && v > a.max)) {
               err.textContent = `Нужно число от ${a.min ?? '…'} до ${a.max ?? '…'}`;
               err.hidden = false;
               row.classList.add('bad');
@@ -462,7 +512,11 @@ const Tracks = (() => {
           else t.attributes[k] = v;
         }
         t.categories = cats.get();
-        t.notes = notes.value.trim();
+        t.notes = cleanText(notes.value, LIMITS.notes);
+        if (!clip.error) {
+          if (clip.url) t.clipUrl = clip.url;
+          else delete t.clipUrl;
+        }
         if (originalCover && originalCover !== pendingCover) window.api.removeCover(originalCover);
         t.cover = pendingCover || null;
         t.updatedAt = new Date().toISOString();

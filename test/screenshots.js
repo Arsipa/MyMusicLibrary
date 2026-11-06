@@ -11,7 +11,7 @@ const OUT = path.join(__dirname, '..', 'docs', 'screenshots');
 const MEDIA = path.join(__dirname, 'media');
 
 const DEMO = [
-  { title: 'Ночной трамвай', file: 'Кукушка (минус).wav', mood: 'sad', lang: 'ru', k: 8, cats: ['cat_concert', 'cat_fav'], stage: 'Куплеты уверенно, в припеве подтянуть верхнюю ноту.', notes: 'Взять дыхание перед вторым припевом. Темп чуть медленнее оригинала — так легче держать длинные ноты.' },
+  { title: 'Ночной трамвай', clip: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', file: 'Кукушка (минус).wav', mood: 'sad', lang: 'ru', k: 8, cats: ['cat_concert', 'cat_fav'], stage: 'Куплеты уверенно, в припеве подтянуть верхнюю ноту.', notes: 'Взять дыхание перед вторым припевом. Темп чуть медленнее оригинала — так легче держать длинные ноты.' },
   { title: 'Summer Rain', file: 'Shallow_instrumental.wav', mood: 'happy', lang: 'en', k: 6, cats: ['cat_rehearsal'], stage: 'Текст выучен, работаю над ритмом во втором куплете.', notes: 'Поработать над произношением в бридже, особенно «through» и «thought».' },
   { title: 'Колыбельная для луны', file: 'Колыбельная.wav', mood: 'neutral', lang: 'ru', k: 10, cats: ['cat_concert', 'cat_vocal'], stage: 'Готово!', notes: 'Готово к выступлению. Держать piano в последнем куплете.' },
   { title: 'Paper Hearts', file: 'Song.wav', mood: 'sad', lang: 'en', k: 4, cats: ['cat_vocal'], stage: 'Пока только первый куплет.', notes: 'Разобрать мелизмы в конце фраз, записать себя на диктофон и сравнить.' },
@@ -76,7 +76,7 @@ module.exports = async (win) => {
         if (d.stage) attrs.learning_stage = d.stage;
         S.library.tracks.push({ id: 'trk_demo' + i, title: d.title, originalFileName: d.title + '.mp3', fileName: info.fileName,
           filePath: 'storage/tracks/' + info.fileName, mime: info.mime, size: info.size, duration: p.duration, hasVideo: false,
-          cover: null, notes: d.notes, categories: d.cats, attributes: attrs, status: 'ready', createdAt: at, updatedAt: at });
+          cover: null, clipUrl: d.clip || undefined, notes: d.notes, categories: d.cats, attributes: attrs, status: 'ready', createdAt: at, updatedAt: at });
       }
       await Store.save('library');
       App.refresh();

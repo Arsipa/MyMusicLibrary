@@ -290,7 +290,10 @@ const Player = (() => {
     forget,
     current: () => currentId,
     isPlaying: (id) => currentId === id && !media.paused,
-    onChange: (fn) => listeners.add(fn),
+    onChange: (fn) => {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
     mountVideo(host) {
       videoHost = host;
       placeVideo();
