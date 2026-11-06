@@ -522,6 +522,92 @@ module.exports = async (win, getLib) => {
     ok(await js(`Filters.sort(Lib.tracks()).length > 0 && (() => { S.settings.sort.key='artist'; S.settings.sort.dir='asc'; const r=Filters.sort(Lib.tracks().filter(t=>t.status!=='draft')); S.settings.sort.key='createdAt'; S.settings.sort.dir='desc'; return r[0].artist === 'Мария Иванова'; })()`), 'сортировка по исполнителю работает');
     fs.rmSync(artistFile, { force: true });
 
+    // ---- История изменений песни
+    await js(`App.openDetail(${JSON.stringify(waltzId)}); 1`);
+    await sleep(400);
+    ok(await js(`!!document.querySelector('.d-history') && document.querySelector('.d-history').textContent.includes('Песня добавлена в библиотеку')`), 'на странице песни есть история с записью «добавлена»');
+    await js(`document.querySelectorAll('.scale-display.interactive .scale-dot')[7].click(); 1`);
+    await sleep(600);
+    ok(await js(`(() => { const it=document.querySelector('.d-history .hist-item'); return it && it.textContent.includes('Знание песни') && it.textContent.includes('3 из 10') && it.textContent.includes('8 из 10'); })()`), 'изменение «Знание песни: 3 → 8» записано в историю');
+    let wl = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'library.json'), 'utf8')).tracks.find((t) => t.id === waltzId);
+    ok(wl.history.length >= 2 && wl.history.some((e) => e.kind === 'added'), 'история сохраняется в library.json');
+
+    // ---- Праздник при максимуме и корона
+    ok(await js(`Lib.attr('knowledge').celebrate === true`), 'у «Знание песни» по умолчанию включено празднование');
+    await js(`document.querySelectorAll('.scale-display.interactive .scale-dot')[9].click(); 1`);
+    await waitFor(`document.querySelector('.modal.celebrate')`, 4000);
+    ok(await js(`!!document.querySelector('canvas.fireworks') && document.querySelector('.modal.celebrate').textContent.includes('10 из 10')`), 'на максимуме — салют и поздравление');
+    await sleep(700);
+    await shot('21-celebrate');
+    await click('.modal.celebrate .modal-actions .btn', 'Ура');
+    await sleep(600);
+    ok(await js(`!!document.querySelector('.d-attr .scale-wrap .crown') && !document.querySelector('canvas.fireworks')`), 'у прокачанного значения появилась корона, салют убран');
+    await js(`document.querySelectorAll('.scale-display.interactive .scale-dot')[9].click(); 1`); // снять 10 (повторный клик очищает)
+    await sleep(400);
+    await js(`document.querySelectorAll('.scale-display.interactive .scale-dot')[9].click(); 1`);
+    await sleep(500);
+    ok(await js(`!!document.querySelector('.modal.celebrate')`), 'праздник срабатывает каждый раз, когда значение снова доходит до максимума');
+    await click('.modal.celebrate .modal-actions .btn', 'Ура');
+    await sleep(400);
+    await js(`App.closeDetail(); 1`);
+    await sleep(300);
+    ok(await js(`!!document.querySelector('.card[data-id="${waltzId}"] .meter-val .crown')`), 'корона видна и на карточке');
+    // флажок празднования в конструкторе — только у шкалы
+    await js(`AttributesManager.create(); 1`);
+    await sleep(400);
+    await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); m.querySelector('input.input').value='Качество выступления'; [...m.querySelectorAll('.type-tile')].find(b=>b.dataset.type==='scale').click(); return 1; })()`);
+    await sleep(200);
+    ok(await js(`!![...document.querySelectorAll('.modal')].pop().querySelector('.celebrate-opt')`), 'у шкалы есть флажок «праздновать максимум»');
+    await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); m.querySelector('.celebrate-opt input').click(); return 1; })()`);
+    await shot('22-celebrate-toggle');
+    await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); [...m.querySelectorAll('.type-tile')].find(b=>b.dataset.type==='number').click(); return !m.querySelector('.celebrate-opt'); })()`).then((r) => ok(r, 'у других типов флажка нет'));
+    await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); [...m.querySelectorAll('.type-tile')].find(b=>b.dataset.type==='scale').click(); m.querySelector('.celebrate-opt input').click(); [...m.querySelectorAll('.modal-actions .btn')].find(b=>b.textContent.includes('Сохранить')).click(); return 1; })()`);
+    await sleep(600);
+    const perfAttr = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'attributes.json'), 'utf8')).attributes.find((a) => a.name === 'Качество выступления');
+    ok(perfAttr && perfAttr.celebrate === true, 'флажок празднования сохранён у атрибута');
+
+    // ---- Видео выступлений
+    const perfVideo = path.join(MEDIA, 'Клип с видео.webm');
+    await js(`App.openDetail(${JSON.stringify(waltzId)}); Performances.add(${JSON.stringify(waltzId)}, [${JSON.stringify(perfVideo)}]); 1`);
+    await waitFor(`document.querySelector('.d-perf .perf-tile')`, 20000);
+    await sleep(800);
+    ok(fs.readdirSync(path.join(getLib().root, 'storage', 'performances')).length === 1, 'видео скопировано в storage/performances');
+    ok(await js(`document.querySelector('.d-history .hist-item').textContent.includes('Добавлено видео выступления')`), 'добавление видео записано в историю');
+    ok(await js(`!!document.querySelector('.card[data-id="${waltzId}"] .art-badge.perf')`), 'на карточке значок «есть видео выступления»');
+    await js(`document.querySelector('.d-perf').scrollIntoView(); 1`);
+    await shot('23-performances');
+    await js(`Player.play(${JSON.stringify(waltzId)}); 1`);
+    await sleep(600);
+    await js(`document.querySelector('.perf-shot').click(); 1`);
+    await waitFor(`document.querySelector('.perf-modal video.perf-player')`);
+    await sleep(1200);
+    ok(await js(`!document.querySelector('.perf-modal video').paused && !Player.isPlaying(${JSON.stringify(waltzId)})`), 'видео выступления играет, музыка в общем плеере на паузе');
+    await shot('24-perf-player');
+    await js(`document.querySelector('.perf-modal .modal-x').click(); 1`);
+    await sleep(400);
+    // удалить песню → видео в корзину, вернуть → видео на месте
+    await js(`Tracks.remove(${JSON.stringify(waltzId)}); 1`);
+    await sleep(300);
+    await click('.modal-actions .btn', 'Удалить');
+    await sleep(800);
+    ok(fs.readdirSync(path.join(getLib().root, 'storage', 'performances')).length === 0 && fs.readdirSync(getLib().trashDir).some((f) => f.startsWith('p_')), 'при удалении песни её видео уходят в корзину');
+    await js(`Tracks.restore(${JSON.stringify(waltzId)}); 1`);
+    await sleep(800);
+    ok(fs.readdirSync(path.join(getLib().root, 'storage', 'performances')).length === 1, 'при возврате из корзины видео возвращаются');
+    wl = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'library.json'), 'utf8')).tracks.find((t) => t.id === waltzId);
+    ok(wl.history.some((e) => e.kind === 'restored'), 'возврат из корзины записан в историю');
+    // удалить само видео
+    await js(`App.openDetail(${JSON.stringify(waltzId)}); 1`);
+    await sleep(400);
+    await js(`Performances.remove(Lib.track(${JSON.stringify(waltzId)}), Lib.track(${JSON.stringify(waltzId)}).performances[0]); 1`);
+    await sleep(300);
+    await click('.modal-actions .btn', 'Удалить');
+    await sleep(800);
+    ok(fs.readdirSync(path.join(getLib().root, 'storage', 'performances')).length === 0 && (await js(`Lib.track(${JSON.stringify(waltzId)}).performances.length === 0`)), 'видео выступления удаляется');
+    const bk = await js(`window.api.createBackup('manual').then(r => r.value)`);
+    ok(fs.existsSync(path.join(getLib().backupsDir, bk, 'storage', 'performances')), 'папка с видео входит в резервную копию');
+    await js(`App.closeDetail(); Player.stop(); 1`);
+
     // ---- Узкое окно
     win.setSize(820, 900);
     await sleep(600);

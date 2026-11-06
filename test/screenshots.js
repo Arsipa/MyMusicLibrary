@@ -101,11 +101,34 @@ module.exports = async (win) => {
     await js(`Filters.reset(); document.querySelector('.filter-btn').click(); 1`);
     await sleep(300);
 
-    // 5. Страница трека
+    // 5. Страница трека: история изменений и видео выступления
+    await js(`(() => { const t = Lib.track('trk_demo0'); const d0 = new Date(t.createdAt).getTime(); const at = (days) => new Date(d0 + days * 86400000).toISOString();
+      t.history = [
+        { at: at(0), kind: 'added', changes: [] },
+        { at: at(3), kind: 'edit', changes: [{ label: 'Знание песни', from: '4 из 10', to: '6 из 10' }] },
+        { at: at(6), kind: 'edit', changes: [{ label: 'Комментарий', from: 'Разобрать текст', to: 'Взять дыхание перед вторым припевом…', edited: true }, { label: 'Категории', from: 'Для концерта', to: 'Для концерта, Любимые' }] },
+        { at: at(9), kind: 'edit', changes: [{ label: 'Знание песни', from: '6 из 10', to: '8 из 10' }] },
+      ]; return 1; })()`);
+    const perfVideo = path.join(MEDIA, 'Клип с видео.webm');
+    if (fs.existsSync(perfVideo)) {
+      await js(`Performances.add('trk_demo0', [${JSON.stringify(perfVideo)}]); 1`);
+      await waitFor(`(Lib.track('trk_demo0').performances || []).length === 1`, 20000);
+      await js(`(async () => { const t = Lib.track('trk_demo0'); t.performances[0].title = 'Концерт в ДК, май 2026'; const h = t.history.pop(); h.changes[0].to = 'Концерт в ДК, май 2026'; t.history.push(h); await Store.save('library'); return 1; })()`);
+    }
     await js(`App.openDetail('trk_demo0'); 1`);
-    await sleep(600);
+    await sleep(800);
     await shot('track-page');
+    await js(`document.querySelector('.d-history').scrollIntoView({ block: 'start' }); document.getElementById('detail').scrollTop -= 20; 1`);
+    await sleep(900);
+    await shot('track-history');
     await js(`App.closeDetail(); 1`);
+
+    // 5б. Праздник: шкала дошла до максимума
+    await js(`Celebrate.show(Lib.track('trk_demo2'), Lib.attr('knowledge')); 1`);
+    await sleep(1100);
+    await shot('celebrate');
+    await js(`document.querySelector('.modal.celebrate .modal-actions .btn').click(); 1`);
+    await sleep(500);
 
     // 6. Форма нового трека
     await js(`(async () => {

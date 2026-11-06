@@ -153,6 +153,7 @@ function normalize(s) {
 const LIMITS = {
   trackTitle: 120,
   artist: 100,
+  perfTitle: 80,
   notes: 1500,
   attrText: 120,
   attrTextarea: 50000, // многострочные атрибуты — например, полный текст песни; предел только от случайной вставки мегабайтов
@@ -323,6 +324,9 @@ const ICONS = {
   hash: '<path d="M9.5 3.5 7.5 20.5M16.5 3.5l-2 17M4.5 9h16M3.5 15h16" stroke-width="2.1" stroke-linecap="round"/>',
   star: '<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" stroke-width="2" stroke-linejoin="round"/>',
   speed: '<path d="M4.5 16a8 8 0 1 1 15 0" stroke-width="2.2" stroke-linecap="round"/><path d="m12 15.5 4-5.5" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.6" fill="currentColor" stroke="none"/>',
+  crown: '<path d="M4 17.5 3 7.5l5 4 4-6.5 4 6.5 5-4-1 10z" fill="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 20.5h14" stroke-width="2.2" stroke-linecap="round"/>',
+  mic: '<rect x="8.5" y="3" width="7" height="11.5" rx="3.5" stroke-width="2.1"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v3.5M8.5 21h7" stroke-width="2.1" stroke-linecap="round"/>',
+  clock: '<circle cx="12" cy="12" r="8.6" stroke-width="2.1"/><path d="M12 7.5V12l3 2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
   link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2" stroke-width="2.2" stroke-linecap="round"/>',
   grip: '<circle cx="9" cy="6" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.7" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.7" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.7" fill="currentColor" stroke="none"/>',
   chevLeft: '<path d="m14.5 6-6 6 6 6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',

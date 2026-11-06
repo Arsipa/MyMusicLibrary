@@ -3494,3 +3494,379 @@ body.sorting * {
 .modal.choose .modal-title::after {
   display: none;
 }
+
+/* ---------- Значки на обложке карточки ---------- */
+.art-badges {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 3;
+  display: flex;
+  gap: 6px;
+}
+.art-badges .art-badge {
+  position: static;
+}
+.art-badge.perf {
+  width: auto;
+  min-width: 34px;
+  padding: 0 8px;
+  gap: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--coral);
+}
+.art-badge.perf small {
+  font-weight: 800;
+  font-size: 12px;
+}
+
+/* ---------- Корона и праздник ---------- */
+.crown {
+  display: inline-grid;
+  place-items: center;
+  color: #f0a92a;
+  filter: drop-shadow(0 2px 3px rgba(240, 169, 42, 0.45));
+  animation: crownIn 0.6s var(--ease);
+  vertical-align: middle;
+}
+.crown .ic {
+  width: 1.05em;
+  height: 1.05em;
+}
+.meter-val .crown {
+  margin-right: 3px;
+  font-size: 15px;
+}
+.scale-wrap .crown {
+  font-size: 26px;
+}
+.scale-picker-num .crown {
+  font-size: 22px;
+  margin-right: 4px;
+}
+@keyframes crownIn {
+  from {
+    transform: translateY(-8px) rotate(-20deg) scale(0.4);
+    opacity: 0;
+  }
+}
+.celebrate-opt {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: linear-gradient(110deg, #fff6d6, #ffe6f0);
+}
+.fireworks {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.fireworks.leaving {
+  opacity: 0;
+}
+.modal.celebrate {
+  text-align: center;
+}
+.celebrate-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.celebrate-crown {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff3c4, #ffc94a);
+  color: #b77a00;
+  box-shadow: 0 0 0 10px rgba(255, 201, 74, 0.25), 0 0 40px rgba(255, 201, 74, 0.8);
+  animation: crownIn 0.8s var(--ease), crownGlow 2s ease-in-out infinite 0.8s;
+}
+.celebrate-crown .ic {
+  width: 52px;
+  height: 52px;
+}
+@keyframes crownGlow {
+  50% {
+    box-shadow: 0 0 0 16px rgba(255, 201, 74, 0.15), 0 0 60px rgba(255, 201, 74, 1);
+  }
+}
+.celebrate-big {
+  margin: 8px 0 0;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 38px;
+  color: var(--violet);
+}
+
+/* ---------- Страница песни: правая колонка, выступления, история ---------- */
+.d-side {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+.d-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.d-h > span:first-child .ic,
+.d-h > .ic {
+  color: var(--violet);
+}
+.d-h-count {
+  font-size: 13px;
+  font-family: var(--body);
+  font-weight: 800;
+  background: var(--coral);
+  color: #fff;
+  padding: 2px 9px;
+  border-radius: 99px;
+}
+.d-perf {
+  margin-top: 22px;
+}
+.perf-empty {
+  margin: -6px 0 14px;
+  max-width: 640px;
+}
+.perf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.perf-tile {
+  position: relative;
+  border-radius: 20px;
+  background: var(--canvas);
+  overflow: hidden;
+}
+.perf-shot {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--ink);
+  overflow: hidden;
+}
+.perf-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+.perf-audio {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--lavender);
+}
+.perf-audio .ic {
+  width: 40px;
+  height: 40px;
+}
+.perf-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--lime);
+  color: var(--ink);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: transform 0.3s var(--ease);
+}
+.perf-play .ic {
+  width: 26px;
+  height: 26px;
+  margin-left: 3px;
+}
+.perf-shot:hover .perf-play {
+  transform: scale(1.12) rotate(-8deg);
+}
+.perf-dur {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(36, 9, 63, 0.8);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.perf-info {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 44px 12px 14px;
+  min-width: 0;
+}
+.perf-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.perf-meta {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.perf-more {
+  position: absolute;
+  right: 6px;
+  bottom: 10px;
+}
+.perf-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 190px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 2px dashed var(--lavender);
+  color: var(--ink-2);
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s, transform 0.25s var(--ease);
+}
+.perf-add:hover {
+  background: rgba(200, 179, 255, 0.15);
+  border-color: var(--violet);
+  transform: translateY(-3px);
+}
+.perf-add span:last-child {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.perf-add-ic {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--coral);
+  color: #fff;
+}
+.perf-modal .modal-body {
+  padding-bottom: 26px;
+}
+.perf-player {
+  width: 100%;
+  max-height: 70vh;
+  display: block;
+  border-radius: 18px;
+  background: #000;
+}
+.modal.perf-modal.wide {
+  width: min(1100px, 100%);
+}
+
+.hist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 4px;
+  position: relative;
+}
+.hist-list::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--lilac);
+}
+.hist-item {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding: 0 0 16px;
+}
+.hist-dot {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--violet);
+  box-shadow: 0 0 0 4px var(--paper);
+}
+.hist-item.k-added .hist-dot {
+  background: var(--lime);
+  box-shadow: 0 0 0 4px var(--paper), 0 0 0 6px var(--ink);
+}
+.hist-item.k-perf-add .hist-dot,
+.hist-item.k-perf-remove .hist-dot {
+  background: var(--coral);
+}
+.hist-body {
+  min-width: 0;
+  flex: 1;
+}
+.hist-date {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+.hist-head {
+  font-weight: 800;
+}
+.hist-changes {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hist-change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+}
+.hist-change b::after {
+  content: ':';
+}
+.hist-from {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+  text-decoration-color: rgba(93, 68, 128, 0.4);
+}
+.hist-from.gone {
+  text-decoration: line-through;
+}
+.hist-to {
+  font-weight: 800;
+  color: var(--violet);
+}
+.hist-arrow,
+.hist-note {
+  color: #a593c4;
+  font-size: 12.5px;
+}
+.hist-arrow .ic {
+  width: 14px;
+  height: 14px;
+}
+.hist-more {
+  margin-left: 30px;
+  font-size: 13.5px;
+}

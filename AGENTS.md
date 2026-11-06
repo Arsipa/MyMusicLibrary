@@ -29,7 +29,7 @@ src/js/*.js         интерфейс, см. ниже
 src/css/            style.css (основа + большинство компонентов, дописывается в конец), cards.css, player.css, responsive.css
 test/e2e.js         сценарий автотеста; test/screenshots.js; test/run-e2e.js (запуск); test/make-media.js (тестовые WAV)
 ```
-Протокол `mml://`: `mml://app/…` — файлы `src/`, `mml://media/<file>` — треки (Range для перемотки), `mml://cover/<file>`.
+Протокол `mml://`: `mml://app/…` — файлы `src/`, `mml://media/<file>` — треки (Range для перемотки), `mml://perf/<file>` — видео выступлений, `mml://cover/<file>`.
 
 ### Модули интерфейса (глобальные объекты)
 | Файл | Объект / функции | Назначение |
@@ -47,13 +47,16 @@ test/e2e.js         сценарий автотеста; test/screenshots.js; te
 | dropdown.js | `dropdown({options,value,onChange})` | стилизованный select (системных `<select>` в проекте нет — так и держать) |
 | colorpicker.js | `colorButton(value, onChange)`, `COLOR_PRESETS` | палитра цвета |
 | sortable.js | `makeSortable(list, {item, handle, onMove})`, `dragHandle()`, `moveItem` | перетаскивание за ручку |
+| history.js | `History.snapshot/diff/record/section` | история изменений песни (запись в `openForm.submit`, `Tracks.setAttr`, `replaceFile`, `restore`, видео) |
+| celebrate.js | `Celebrate.isCrowned/crown/check/show` | празднование максимума шкалы (`attr.celebrate`), салют на canvas, корона |
+| performances.js | `Performances.add/watch/rename/remove/section`, `perfUrl` | видео выступлений на странице песни |
 | tour.js | `Tour.start()` | обучение (шаги в `buildSteps()`) |
 | app.js | `App.init/refresh/renderGrid/openDetail/closeDetail` | главный экран, страница трека, запуск |
 
 ## Данные
-Папка: `%APPDATA%\My Music Library\Library\` (`data/*.json`, `storage/tracks|covers|trash`, `backups/`). Путь меняется в настройках, хранится в `config.json`.
-- `library.json`: `{version, tracks:[...], trash:[{track, deletedAt}]}`. Трек: `id, title, artist?, fileName (уникальный id+расширение), originalFileName, mime, size, duration, hasVideo, cover, notes, clipUrl?, categories[], attributes{attrId: value}, status: 'ready'|'draft', createdAt, updatedAt`.
-- `attributes.json`: `{attributes:[{id, name, type, required, showOnCard, options:[{id,label,color}], min, max}]}`; типы: text, textarea, select, multiselect, number, scale.
+Папка: `%APPDATA%\My Music Library\Library\` (`data/*.json`, `storage/tracks|covers|trash|performances`, `backups/`). Видео выступлений — `storage/performances/p_*.ext`; при удалении песни уходят в `trash` вместе с ней. Путь меняется в настройках, хранится в `config.json`.
+- `library.json`: `{version, tracks:[...], trash:[{track, deletedAt}]}`. Трек: `id, title, artist?, performances[] ({id, fileName, originalFileName, title, size, duration, hasVideo, addedAt}), history[] ({at, kind: added|edit|file|restored|perf-add|perf-remove, changes:[{label, from, to, edited?}]}), fileName (уникальный id+расширение), originalFileName, mime, size, duration, hasVideo, cover, notes, clipUrl?, categories[], attributes{attrId: value}, status: 'ready'|'draft', createdAt, updatedAt`.
+- `attributes.json`: `{attributes:[{id, name, type, required, showOnCard, options:[{id,label,color}], min, max, celebrate?}]}`; типы: text, textarea, select, multiselect, number, scale.
 - `categories.json`: `{categories:[{id, name, color}]}`; `settings.json`: sort, volume, autoBackup(false по умолч.), backupEvery(day|week|month), lastAutoBackup, tutorialDone.
 - Значения атрибутов хранятся по **id** атрибута/варианта → переименование ничего не ломает.
 - Миграции — в `Store.load()` (пример: настройки 1.0 без `backupEvery`). Поля не удалять, только добавлять.
@@ -67,6 +70,7 @@ test/e2e.js         сценарий автотеста; test/screenshots.js; te
 - Класс `.cat-row` занят строками окна категорий — не переиспользовать для другого.
 - CSS дописывается в конец `style.css`; цвета — токены из `:root` (`--ink`, `--violet`, `--lavender`, `--lilac`, `--canvas`, `--paper`, `--lime`, `--coral`, `--sun`, `--mint`, `--danger`). Шрифты Unbounded (заголовки) и Manrope встроены.
 - Переводы строк: LF (закреплено в `.gitattributes`); `README.txt` — CRLF + BOM (для Блокнота). Правя файлы node-скриптом, учитывай это.
+- Обратные слэши (регулярки `\s`, пути `%APPDATA%\…`) теряются, если вставлять их через bash-heredoc в node-скрипт. Такие места правь инструментом точечной замены (Edit), а не скриптом.
 - Автотест: хук `MML_TEST` работает только в незапакованной программе. В тестовом режиме `openUrl/openLink` не открывают браузер. Новую функцию — сразу покрывать проверкой в `test/e2e.js`.
 - **Никогда не менять** `build.appId` и `productName` в package.json (по ним установщик удаляет прошлую версию, а программа находит данные).
 

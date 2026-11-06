@@ -45,7 +45,11 @@ const Cards = (() => {
     const missing = S.runtime.missing.has(t.id);
     const artEl = art(t);
     if (current) artEl.appendChild(eq());
-    if (t.hasVideo) artEl.appendChild(h('span.art-badge', { icon: 'video', title: 'Есть видео' }));
+    const badges = h('div.art-badges');
+    if (t.hasVideo) badges.appendChild(h('span.art-badge', { icon: 'video', title: 'Минусовка с видео' }));
+    const perfs = (t.performances || []).length;
+    if (perfs) badges.appendChild(h('span.art-badge.perf', { title: `Видео выступлений: ${perfs}` }, h('span', { icon: 'mic' }), perfs > 1 ? h('small', { text: perfs }) : null));
+    if (badges.children.length) artEl.appendChild(badges);
 
     const chips = h('div.card-chips');
     let meter = null;
@@ -58,7 +62,7 @@ const Cards = (() => {
         const n = at.max - at.min + 1;
         const bars = h('div.meter-bars');
         for (let i = 0; i < n; i++) bars.appendChild(h('i' + (at.min + i <= val && val ? '.on' : ''), { style: { '--i': i / Math.max(1, n - 1) } }));
-        meter = h('div.card-meter', { title: `${at.name}: ${val ? val + ' из ' + at.max : 'не указано'}` }, h('span.meter-label', { text: at.name }), bars, h('b.meter-val', { text: val ? val : '—' }));
+        meter = h('div.card-meter', { title: `${at.name}: ${val ? val + ' из ' + at.max : 'не указано'}` }, h('span.meter-label', { text: at.name }), bars, h('b.meter-val', null, Celebrate.isCrowned(at, v) ? Celebrate.crown() : null, val ? String(val) : '—'));
       } else if (at.type === 'select' && !Attr.isEmpty(at, v)) {
         chips.appendChild(h('span.chip', { style: { '--c': Attr.optionColor(at, v) }, text: Attr.optionLabel(at, v) }));
       } else if (at.type === 'multiselect' && !Attr.isEmpty(at, v)) {
@@ -315,6 +319,8 @@ const Tracks = (() => {
       let pendingCover = t.cover;
       const originalCover = t.cover;
       let result = null;
+      const histBefore = History.snapshot(t); // для истории изменений
+      const attrsBefore = { ...t.attributes }; // для празднования максимума
 
       const titleInp = h('input.input.input-title', { type: 'text', value: t.title, placeholder: 'Название песни' });
       const titleErr = h('p.field-error', { hidden: true });
@@ -623,11 +629,18 @@ const Tracks = (() => {
         }
         const wasDraft = t.status === 'draft';
         t.status = 'ready';
+        if (wasDraft) History.record(t, [], 'added');
+        else History.record(t, History.diff(histBefore, History.snapshot(t)));
         const ok = await Store.save('library');
         if (!ok) return;
         App.refresh();
         UI.toast(wasDraft ? `«${t.title}» теперь в библиотеке` : 'Сохранено', { kind: 'ok' });
-        finish('saved');
+        // сначала закрываем форму, потом праздник (если шкала дошла до максимума), и только потом — следующая форма
+        stopListening();
+        result = 'saved';
+        m.close('force');
+        await Celebrate.check(t, attrsBefore);
+        resolve('saved');
       }
     });
   }
@@ -653,6 +666,7 @@ const Tracks = (() => {
     const mv = await window.api.trashTrackFile(t.fileName);
     if (!mv.ok) return UI.alert({ title: 'Не получилось удалить', text: mv.message });
     S.library.tracks = S.library.tracks.filter((x) => x.id !== id);
+    for (const p of t.performances || []) await window.api.trashTrackFile(p.fileName, 'performances');
     if (mv.value) S.library.trash.unshift({ track: t, deletedAt: new Date().toISOString() });
     else if (t.cover) window.api.removeCover(t.cover);
     S.runtime.missing.delete(id);
@@ -669,7 +683,9 @@ const Tracks = (() => {
     const entry = S.library.trash[idx];
     const r = await window.api.untrashTrackFile(entry.track.fileName);
     if (!r.ok) return UI.alert({ title: 'Не получилось вернуть трек', text: r.message });
+    for (const p of entry.track.performances || []) await window.api.untrashTrackFile(p.fileName, 'performances');
     S.library.trash.splice(idx, 1);
+    History.record(entry.track, [], 'restored');
     entry.track.updatedAt = new Date().toISOString();
     S.library.tracks.push(entry.track);
     await Store.save('library');
@@ -694,6 +710,7 @@ const Tracks = (() => {
     const r = await window.api.purgeTrashFile(entry.track.fileName);
     if (!r.ok) return UI.toast(r.message, { kind: 'error' });
     if (entry.track.cover) window.api.removeCover(entry.track.cover);
+    for (const p of entry.track.performances || []) await window.api.purgeTrashFile(p.fileName);
     S.library.trash.splice(S.library.trash.indexOf(entry), 1);
     await Store.save('library');
   }
@@ -730,6 +747,7 @@ const Tracks = (() => {
     }
     Player.forget(id);
     const old = t.fileName;
+    History.record(t, [{ label: 'Файл', from: t.originalFileName || '', to: info.originalFileName }], 'file');
     Object.assign(t, {
       fileName: info.fileName,
       filePath: 'storage/tracks/' + info.fileName,
@@ -758,11 +776,15 @@ const Tracks = (() => {
     const t = Lib.track(id);
     if (!t) return;
     const a = Lib.attr(attrId);
+    const before = History.snapshot(t);
+    const attrsBefore = { ...t.attributes };
     if (Attr.isEmpty(a, value)) delete t.attributes[attrId];
     else t.attributes[attrId] = value;
+    History.record(t, History.diff(before, History.snapshot(t)));
     t.updatedAt = new Date().toISOString();
     await Store.save('library');
     App.refresh();
+    await Celebrate.check(t, attrsBefore);
   }
 
   /** Файлы без карточек → черновики */

@@ -27,7 +27,7 @@ const DEFAULT_ATTRIBUTES = () => ({
         { id: 'en', label: 'Английский' },
       ],
     },
-    { id: 'knowledge', name: 'Знание песни', type: 'scale', required: true, showOnCard: true, min: 1, max: 10 },
+    { id: 'knowledge', name: 'Знание песни', type: 'scale', required: true, showOnCard: true, min: 1, max: 10, celebrate: true },
     { id: 'learning_stage', name: 'Этап изучения', type: 'textarea', required: false, showOnCard: false },
   ],
 });
@@ -119,6 +119,8 @@ const Store = (() => {
       t.status = t.status === 'draft' ? 'draft' : 'ready';
       t.title = t.title || titleFromFile(t.originalFileName);
       t.notes = t.notes || '';
+      t.performances = Array.isArray(t.performances) ? t.performances : [];
+      t.history = Array.isArray(t.history) ? t.history : [];
     }
     return lib;
   }

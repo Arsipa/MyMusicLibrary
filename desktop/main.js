@@ -124,6 +124,10 @@ function registerProtocol() {
         const full = library.mediaPath(rel);
         return serveFile(full, MEDIA_TYPES[path.extname(full).toLowerCase()] || 'application/octet-stream', request, true);
       }
+      if (url.host === 'perf') {
+        const full = library.perfPath(rel);
+        return serveFile(full, MEDIA_TYPES[path.extname(full).toLowerCase()] || 'application/octet-stream', request, true);
+      }
       if (url.host === 'cover') {
         const full = library.coverPath(rel);
         return serveFile(full, IMAGE_TYPES[path.extname(full).toLowerCase()] || 'application/octet-stream', request, false);
@@ -256,8 +260,24 @@ function registerIpc() {
   handle('track:import', async (srcPath) => library.importMedia(srcPath));
   handle('track:exists', async (fileName) => library.fileExists('tracks', fileName));
   handle('track:remove-file', async (fileName) => library.removeFile('tracks', fileName));
-  handle('track:trash', async (fileName) => library.moveToTrash(fileName));
-  handle('track:untrash', async (fileName) => library.restoreFromTrash(fileName));
+  handle('track:trash', async (fileName, kind) => library.moveToTrash(fileName, kind === 'performances' ? 'performances' : 'tracks'));
+  handle('track:untrash', async (fileName, kind) => library.restoreFromTrash(fileName, kind === 'performances' ? 'performances' : 'tracks'));
+
+  // видео выступлений
+  handle('perf:pick', async () => {
+    const r = await dialog.showOpenDialog(win, {
+      title: 'Выберите видео выступления',
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: 'Видео', extensions: ['mp4', 'm4v', 'webm', 'mov'] },
+        { name: 'Все файлы', extensions: ['*'] },
+      ],
+    });
+    return r.canceled ? [] : r.filePaths;
+  });
+  handle('perf:import', async (srcPath) => library.importMedia(srcPath, 'performances'));
+  handle('perf:remove', async (fileName) => library.removeFile('performances', fileName));
+  handle('perf:exists', async (fileName) => library.fileExists('performances', fileName));
   handle('track:purge', async (fileName) => library.removeFile('trash', fileName));
   handle('track:save-copy', async (kind, fileName, suggested) => {
     const r = await dialog.showSaveDialog(win, {

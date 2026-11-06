@@ -60,7 +60,7 @@ const Attr = {
           })
         );
       }
-      return h('div.scale-wrap', null, wrap, h('span.scale-num', { text: val === null ? '—' : `${val}/${max}` }));
+      return h('div.scale-wrap', null, wrap, h('span.scale-num', { text: val === null ? '—' : `${val}/${max}` }), Celebrate.isCrowned(attr, val) ? Celebrate.crown('Максимум — корона!') : null);
     }
     if (Attr.isEmpty(attr, v)) return h('span.val-empty', { text: 'не заполнено' });
     if (attr.type === 'select') {
@@ -157,6 +157,7 @@ const Attr = {
         const paint = () => {
           box.querySelectorAll('.scale-cell').forEach((b) => b.classList.toggle('on', val !== null && Number(b.dataset.v) <= val));
           num.textContent = val === null ? '—' : String(val);
+          if (Celebrate.isCrowned(attr, val)) num.prepend(Celebrate.crown());
         };
         for (let i = min; i <= max; i++) {
           box.appendChild(
@@ -227,6 +228,7 @@ const AttributesManager = (() => {
                 ATTR_TYPES[a.type].label,
                 a.type === 'select' || a.type === 'multiselect' ? ` · ${a.options.length} ${plural(a.options.length, 'вариант', 'варианта', 'вариантов')}` : '',
                 a.type === 'scale' ? ` · от ${a.min} до ${a.max}` : '',
+                a.type === 'scale' && a.celebrate ? ' · 👑 праздник на максимуме' : '',
                 ` · заполнено у ${used} ${plural(used, 'трека', 'треков', 'треков')}`
               )
             ),
@@ -320,7 +322,7 @@ const AttributesManager = (() => {
       typeGrid.querySelectorAll('.type-tile').forEach((b) => b.classList.toggle('on', b.dataset.type === draft.type));
     }
 
-    let minInp, maxInp;
+    let minInp, maxInp, celebToggle;
     function renderSpecific() {
       clear(specific);
       if (draft.type === 'select' || draft.type === 'multiselect') {
@@ -404,6 +406,11 @@ const AttributesManager = (() => {
             h('p.muted.small', { text: isScale ? 'Шкала — это ряд кружочков от минимума до максимума (не больше 20 делений).' : 'Можно оставить пустым, если ограничений нет.' })
           )
         );
+        if (isScale) {
+          // праздник при достижении максимума: салют, поздравление и корона у значения
+          celebToggle = toggle('Праздновать, когда оценка дойдёт до максимума — салют и корона 👑', !!draft.celebrate);
+          specific.appendChild(h('div.celebrate-opt', null, celebToggle.el));
+        } else celebToggle = null;
       }
     }
 
@@ -464,6 +471,8 @@ const AttributesManager = (() => {
         delete draft.min;
         delete draft.max;
       }
+      if (draft.type === 'scale' && celebToggle && celebToggle.get()) draft.celebrate = true;
+      else delete draft.celebrate;
 
       // Последствия для уже заполненных значений
       const affected = [];

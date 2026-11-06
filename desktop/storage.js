@@ -29,6 +29,7 @@ const MEDIA_TYPES = {
   '.oga': 'audio/ogg',
   '.opus': 'audio/ogg',
   '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
   '.weba': 'audio/webm',
 };
 const IMAGE_TYPES = {
@@ -40,7 +41,7 @@ const IMAGE_TYPES = {
 };
 
 const DOCS = ['library.json', 'attributes.json', 'categories.json', 'settings.json'];
-const STORAGE_SUBDIRS = ['tracks', 'covers', 'trash'];
+const STORAGE_SUBDIRS = ['tracks', 'covers', 'trash', 'performances'];
 const AUTO_BACKUPS_KEEP = 12;
 const SPACE_RESERVE = 64 * 1024 * 1024; // оставляем запас 64 МБ
 
@@ -192,12 +193,13 @@ class Library {
     this.tracksDir = path.join(this.storageDir, 'tracks');
     this.coversDir = path.join(this.storageDir, 'covers');
     this.trashDir = path.join(this.storageDir, 'trash');
+    this.perfDir = path.join(this.storageDir, 'performances'); // видео выступлений
     this.backupsDir = path.join(this.root, 'backups');
     this.blocked = new Set(); // документы, запись в которые запрещена до восстановления
   }
 
   ensureDirs() {
-    for (const d of [this.dataDir, this.tracksDir, this.coversDir, this.trashDir, this.backupsDir]) {
+    for (const d of [this.dataDir, this.tracksDir, this.coversDir, this.trashDir, this.perfDir, this.backupsDir]) {
       fs.mkdirSync(d, { recursive: true });
     }
   }
@@ -291,7 +293,13 @@ class Library {
 
   // ---------- Треки ----------
 
-  async importMedia(srcPath) {
+  dirOf(kind) {
+    return { tracks: this.tracksDir, covers: this.coversDir, trash: this.trashDir, performances: this.perfDir }[kind];
+  }
+
+  /** Копирует файл в хранилище: kind = 'tracks' (минусовки) или 'performances' (видео выступлений) */
+  async importMedia(srcPath, kind = 'tracks') {
+    const targetDir = kind === 'performances' ? this.perfDir : this.tracksDir;
     let st;
     try {
       st = await fsp.stat(srcPath);
@@ -303,11 +311,11 @@ class Library {
     if (!MEDIA_TYPES[ext]) throw new LibError('unsupported');
     if (st.size === 0) throw new LibError('empty');
     this.ensureDirs();
-    if (freeSpace(this.tracksDir) < st.size + SPACE_RESERVE) throw new LibError('no_space');
+    if (freeSpace(targetDir) < st.size + SPACE_RESERVE) throw new LibError('no_space');
 
-    const id = newId('t_');
+    const id = newId(kind === 'performances' ? 'p_' : 't_');
     const fileName = id + ext;
-    const dest = path.join(this.tracksDir, fileName);
+    const dest = path.join(targetDir, fileName);
     const part = dest + '.part';
     try {
       await fsp.copyFile(srcPath, part);
@@ -354,9 +362,12 @@ class Library {
   coverPath(fileName) {
     return safeJoin(this.coversDir, fileName);
   }
+  perfPath(fileName) {
+    return safeJoin(this.perfDir, fileName);
+  }
 
   async fileExists(kind, fileName) {
-    const dir = { tracks: this.tracksDir, covers: this.coversDir, trash: this.trashDir }[kind];
+    const dir = this.dirOf(kind);
     if (!dir) return false;
     try {
       const st = await fsp.stat(safeJoin(dir, fileName));
@@ -367,29 +378,29 @@ class Library {
   }
 
   async removeFile(kind, fileName) {
-    const dir = { tracks: this.tracksDir, covers: this.coversDir, trash: this.trashDir }[kind];
+    const dir = this.dirOf(kind);
     if (!dir) throw new LibError('bad_name');
     await fsp.rm(safeJoin(dir, fileName), { force: true });
   }
 
-  async moveToTrash(fileName) {
+  async moveToTrash(fileName, kind = 'tracks') {
     this.ensureDirs();
-    const src = safeJoin(this.tracksDir, fileName);
+    const src = safeJoin(kind === 'performances' ? this.perfDir : this.tracksDir, fileName);
     const dest = safeJoin(this.trashDir, fileName);
     if (!fs.existsSync(src)) return false;
     renameWithRetry(src, dest);
     return true;
   }
 
-  async restoreFromTrash(fileName) {
+  async restoreFromTrash(fileName, kind = 'tracks') {
     const src = safeJoin(this.trashDir, fileName);
-    const dest = safeJoin(this.tracksDir, fileName);
+    const dest = safeJoin(kind === 'performances' ? this.perfDir : this.tracksDir, fileName);
     if (!fs.existsSync(src)) throw new LibError('not_found');
     renameWithRetry(src, dest);
   }
 
   async copyOut(kind, fileName, destPath) {
-    const dir = kind === 'trash' ? this.trashDir : this.tracksDir;
+    const dir = this.dirOf(kind) || this.tracksDir;
     const src = safeJoin(dir, fileName);
     const st = await fsp.stat(src);
     if (freeSpace(path.dirname(destPath)) < st.size + 1024 * 1024) throw new LibError('no_space');
@@ -406,7 +417,8 @@ class Library {
     const refTracks = new Set(referenced.tracks || []);
     const refTrash = new Set(referenced.trash || []);
     const refCovers = new Set(referenced.covers || []);
-    const result = { missing: [], missingTrash: [], orphans: [], removedPartials: 0 };
+    const refPerf = new Set(referenced.performances || []);
+    const result = { missing: [], missingTrash: [], missingPerf: [], orphans: [], removedPartials: 0 };
 
     const trackFiles = await listFiles(this.tracksDir);
     for (const f of trackFiles) {
@@ -422,6 +434,16 @@ class Library {
     }
     const have = new Set(trackFiles);
     for (const f of refTracks) if (!have.has(f)) result.missing.push(f);
+    // видео выступлений: убираем недокопированные остатки, отмечаем пропавшие (лишние не трогаем — это пользовательские видео)
+    const perfFiles = await listFiles(this.perfDir);
+    for (const f of perfFiles) {
+      if (f.endsWith('.part')) {
+        await fsp.rm(path.join(this.perfDir, f), { force: true });
+        result.removedPartials++;
+      }
+    }
+    const havePerf = new Set(perfFiles);
+    for (const f of refPerf) if (!havePerf.has(f)) result.missingPerf.push(f);
     const trashFiles = new Set(await listFiles(this.trashDir));
     for (const f of refTrash) if (!trashFiles.has(f)) result.missingTrash.push(f);
     // лишние обложки удаляем тихо: это не музыка и не пользовательские данные

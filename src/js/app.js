@@ -263,12 +263,18 @@ const App = (() => {
           null,
           h('section.d-panel', null, h('h2.d-h', { text: 'Характеристики' }), attrList),
           h(
-            'section.d-panel.d-notes',
+            'div.d-side',
             null,
-            h('h2.d-h', { text: 'Комментарий' }),
-            t.notes ? h('p.d-note-text', { text: t.notes }) : h('p.muted', null, 'Пока пусто. ', h('button.link-btn', { text: 'Добавить заметку', on: { click: () => Tracks.openForm(t.id, { mode: t.status === 'draft' ? 'new' : 'edit' }) } }))
+            h(
+              'section.d-panel.d-notes',
+              null,
+              h('h2.d-h', { text: 'Комментарий' }),
+              t.notes ? h('p.d-note-text', { text: t.notes }) : h('p.muted', null, 'Пока пусто. ', h('button.link-btn', { text: 'Добавить заметку', on: { click: () => Tracks.openForm(t.id, { mode: t.status === 'draft' ? 'new' : 'edit' }) } }))
+            ),
+            History.section(t)
           )
-        )
+        ),
+        Performances.section(t)
       )
     );
     if (videoStage) {

@@ -287,6 +287,7 @@ const Player = (() => {
     play,
     toggle,
     stop,
+    pause: () => media.pause(),
     forget,
     current: () => currentId,
     isPlaying: (id) => currentId === id && !media.paused,
