@@ -4,8 +4,8 @@
   "version": "1.1.0",
   "description": "Личная библиотека минусовок",
   "main": "desktop/main.js",
-  "author": "My Music Library",
-  "license": "UNLICENSED",
+  "author": "Arsipa",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "start": "electron .",
@@ -24,7 +24,7 @@
   "build": {
     "appId": "local.mymusiclibrary.app",
     "productName": "My Music Library",
-    "copyright": "My Music Library",
+    "copyright": "Copyright (c) 2026 Arsipa",
     "directories": {
       "output": "dist",
       "buildResources": "build"
