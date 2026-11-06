@@ -1,0 +1,213 @@
+'use strict';
+/* Общие помощники: создание элементов, форматирование, иконки. */
+
+function h(tag, props, ...children) {
+  const m = /^([a-z0-9-]+)?((?:[.#][\w-]+)*)$/i.exec(tag);
+  const el = document.createElement((m && m[1]) || 'div');
+  if (m && m[2]) {
+    for (const part of m[2].match(/[.#][\w-]+/g)) {
+      if (part[0] === '.') el.classList.add(part.slice(1));
+      else el.id = part.slice(1);
+    }
+  }
+  if (props) {
+    for (const [k, v] of Object.entries(props)) {
+      if (v === undefined || v === null || v === false) continue;
+      if (k === 'on') for (const [ev, fn] of Object.entries(v)) el.addEventListener(ev, fn);
+      else if (k === 'style' && typeof v === 'object') {
+        for (const [sk, sv] of Object.entries(v)) {
+          if (sk.startsWith('--')) el.style.setProperty(sk, sv);
+          else el.style[sk] = sv;
+        }
+      }
+      else if (k === 'dataset') Object.assign(el.dataset, v);
+      else if (k === 'html') el.innerHTML = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k === 'icon') el.innerHTML = icon(v);
+      else if (k in el && typeof v !== 'string') el[k] = v;
+      else if (k === 'value' || k === 'checked' || k === 'disabled' || k === 'hidden') el[k] = v;
+      else el.setAttribute(k, v === true ? '' : v);
+    }
+  }
+  appendChildren(el, children);
+  return el;
+}
+
+function appendChildren(el, children) {
+  for (const c of children.flat(Infinity)) {
+    if (c === null || c === undefined || c === false) continue;
+    el.appendChild(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+}
+
+function clear(el) {
+  while (el.firstChild) el.removeChild(el.firstChild);
+  return el;
+}
+
+function uid(prefix = 'id_') {
+  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function deepClone(o) {
+  return JSON.parse(JSON.stringify(o));
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...a) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...a), ms);
+  };
+}
+
+function fmtTime(sec) {
+  if (!isFinite(sec) || sec < 0) return '–:––';
+  sec = Math.floor(sec);
+  const m = Math.floor(sec / 60);
+  const s = String(sec % 60).padStart(2, '0');
+  if (m >= 60) return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}:${s}`;
+  return `${m}:${s}`;
+}
+
+function fmtDate(iso, withTime = true) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const opts = { day: 'numeric', month: 'long', year: 'numeric' };
+  if (withTime) Object.assign(opts, { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString('ru-RU', opts);
+}
+
+function fmtSize(bytes) {
+  if (!isFinite(bytes)) return '—';
+  if (bytes < 1024) return bytes + ' Б';
+  const u = ['КБ', 'МБ', 'ГБ', 'ТБ'];
+  let i = -1;
+  do {
+    bytes /= 1024;
+    i++;
+  } while (bytes >= 1024 && i < u.length - 1);
+  return bytes.toFixed(bytes < 10 ? 1 : 0).replace('.', ',') + ' ' + u[i];
+}
+
+function plural(n, one, few, many) {
+  const a = Math.abs(n) % 100;
+  const b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  if (b === 1) return one;
+  return many;
+}
+
+function hashStr(s) {
+  let x = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    x ^= s.charCodeAt(i);
+    x = Math.imul(x, 16777619);
+  }
+  return x >>> 0;
+}
+
+function titleFromFile(name) {
+  return (
+    String(name || '')
+      .replace(/\.[^.]+$/, '')
+      .replace(/[_]+/g, ' ')
+      .replace(/\s*[\(\[]?(минус|minus|instrumental|karaoke|караоке)[\)\]]?\s*/gi, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim() || 'Без названия'
+  );
+}
+
+function normalize(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/ё/g, 'е');
+}
+
+/* ---------- Иконки (свои, нарисованные под приложение) ---------- */
+const ICONS = {
+  plus: '<path d="M12 4.5v15M4.5 12h15" stroke-width="3" stroke-linecap="round"/>',
+  play: '<path d="M8 5.2c0-1 1.1-1.6 1.9-1.1l10 6.4c.8.5.8 1.6 0 2.1l-10 6.4c-.8.5-1.9-.1-1.9-1.1V5.2z" fill="currentColor" stroke="none"/>',
+  pause: '<rect x="6" y="4.5" width="4.4" height="15" rx="1.6" fill="currentColor" stroke="none"/><rect x="13.6" y="4.5" width="4.4" height="15" rx="1.6" fill="currentColor" stroke="none"/>',
+  sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9" stroke-width="2.2" stroke-linecap="round"/><circle cx="15" cy="7" r="2.6" stroke-width="2.2"/><circle cx="9" cy="17" r="2.6" stroke-width="2.2"/>',
+  tag: '<path d="M3.5 12.2V5a1.5 1.5 0 0 1 1.5-1.5h7.2c.4 0 .8.2 1.1.4l7.4 7.4a1.5 1.5 0 0 1 0 2.1l-7.2 7.2a1.5 1.5 0 0 1-2.1 0l-7.4-7.4a1.5 1.5 0 0 1-.5-1z" stroke-width="2.1" stroke-linejoin="round"/><circle cx="8.2" cy="8.2" r="1.7" fill="currentColor" stroke="none"/>',
+  shield: '<path d="M12 3.2 4.8 6v5.6c0 4.4 3 8 7.2 9.2 4.2-1.2 7.2-4.8 7.2-9.2V6L12 3.2z" stroke-width="2.1" stroke-linejoin="round"/><path d="m8.7 12 2.3 2.3 4.4-4.6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  search: '<circle cx="10.5" cy="10.5" r="6" stroke-width="2.4"/><path d="m15 15 5 5" stroke-width="2.6" stroke-linecap="round"/>',
+  close: '<path d="m6 6 12 12M18 6 6 18" stroke-width="2.6" stroke-linecap="round"/>',
+  edit: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" stroke-width="2.1" stroke-linejoin="round"/><path d="m13.5 6.5 4 4" stroke-width="2.1"/>',
+  trash: '<path d="M4.5 7h15M10 3.8h4M6.5 7l.9 11.4A2 2 0 0 0 9.4 20.2h5.2a2 2 0 0 0 2-1.8L17.5 7" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11v5M14 11v5" stroke-width="2" stroke-linecap="round"/>',
+  more: '<circle cx="5.5" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="2" fill="currentColor" stroke="none"/>',
+  back: '<path d="M14.5 5 7.5 12l7 7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  loop: '<path d="M17 3.5 20 6.5l-3 3M4 11.5V10a3.5 3.5 0 0 1 3.5-3.5H20M7 20.5 4 17.5l3-3M20 12.5V14a3.5 3.5 0 0 1-3.5 3.5H4" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+  rew: '<path d="M11.5 6.5 5 12l6.5 5.5V6.5zM19.5 6.5 13 12l6.5 5.5V6.5z" fill="currentColor" stroke="none"/>',
+  fwd: '<path d="M12.5 6.5 19 12l-6.5 5.5V6.5zM4.5 6.5 11 12l-6.5 5.5V6.5z" fill="currentColor" stroke="none"/>',
+  volume: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" stroke-width="2" stroke-linecap="round"/>',
+  mute: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="m16 9.5 5 5M21 9.5l-5 5" stroke-width="2" stroke-linecap="round"/>',
+  note: '<path d="M9 18V5.5l11-2.5v12.5" stroke-width="2.1" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.8" fill="currentColor" stroke="none"/><circle cx="17.5" cy="15.5" r="2.8" fill="currentColor" stroke="none"/>',
+  filter: '<path d="M4 5h16l-6.2 7.6V19l-3.6-1.8v-4.6z" stroke-width="2.1" stroke-linejoin="round"/>',
+  sortUp: '<path d="M7 19V5M3.5 8.5 7 5l3.5 3.5M13 7h7M13 12h5M13 17h3" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+  sortDown: '<path d="M7 5v14M3.5 15.5 7 19l3.5-3.5M13 7h3M13 12h5M13 17h7" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>',
+  warn: '<path d="M12 3.5 2.8 19.5h18.4z" stroke-width="2.1" stroke-linejoin="round"/><path d="M12 10v4.5" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="currentColor" stroke="none"/>',
+  video: '<rect x="3" y="6" width="13" height="12" rx="3" stroke-width="2.1"/><path d="m16 10.5 5-3v9l-5-3" stroke-width="2.1" stroke-linejoin="round"/>',
+  image: '<rect x="3.5" y="4.5" width="17" height="15" rx="3" stroke-width="2.1"/><circle cx="9" cy="10" r="1.8" fill="currentColor" stroke="none"/><path d="m4.5 17.5 5-4.5 3.5 3 3-2.5 4 3.5" stroke-width="2" stroke-linejoin="round"/>',
+  undo: '<path d="M8 5 4 9l4 4" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 9H14a5.5 5.5 0 0 1 0 11h-3" stroke-width="2.3" stroke-linecap="round"/>',
+  download: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>',
+  upload: '<path d="M12 15.5V4.5M7.5 9 12 4.5 16.5 9M5 19.5h14" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>',
+  folder: '<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" stroke-width="2.1" stroke-linejoin="round"/>',
+  replace: '<path d="M4 9a8 8 0 0 1 14.5-3.5M20 4v4h-4M20 15a8 8 0 0 1-14.5 3.5M4 20v-4h4" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+  open: '<path d="M14 4.5h5.5V10M19.5 4.5 11 13M17 14v4a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 5 18V9a1.5 1.5 0 0 1 1.5-1.5h4" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+  heartbeat: '<path d="M3 12h4l2-5 4 10 2-5h6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  up: '<path d="m6 14 6-6 6 6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  down: '<path d="m6 10 6 6 6-6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  text: '<path d="M5 6.5h14M12 6.5V19" stroke-width="2.4" stroke-linecap="round"/>',
+  paragraph: '<path d="M4 6h16M4 10.5h16M4 15h16M4 19.5h9" stroke-width="2.1" stroke-linecap="round"/>',
+  list: '<circle cx="5" cy="7" r="1.6" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.6" fill="currentColor" stroke="none"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20" stroke-width="2.1" stroke-linecap="round"/>',
+  checks: '<rect x="3.5" y="4" width="6.5" height="6.5" rx="1.8" stroke-width="2"/><rect x="3.5" y="13.5" width="6.5" height="6.5" rx="1.8" stroke-width="2"/><path d="m5.2 7.3 1.4 1.4 2.4-2.6M13.5 7.3H20M13.5 16.8H20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  hash: '<path d="M9.5 3.5 7.5 20.5M16.5 3.5l-2 17M4.5 9h16M3.5 15h16" stroke-width="2.1" stroke-linecap="round"/>',
+  star: '<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" stroke-width="2" stroke-linejoin="round"/>',
+  speed: '<path d="M4.5 16a8 8 0 1 1 15 0" stroke-width="2.2" stroke-linecap="round"/><path d="m12 15.5 4-5.5" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.6" fill="currentColor" stroke="none"/>',
+  help: '<circle cx="12" cy="12" r="8.6" stroke-width="2.1"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.6" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="16.9" r="1.2" fill="currentColor" stroke="none"/>',
+  arrow: '<path d="M5 12h13.5M13 6.5l5.5 5.5-5.5 5.5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  chevron: '<path d="m7 9.5 5 5 5-5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  sparkle: '<path d="M12 3c.6 4.6 2.4 6.4 7 7-4.6.6-6.4 2.4-7 7-.6-4.6-2.4-6.4-7-7 4.6-.6 6.4-2.4 7-7z" fill="currentColor" stroke="none"/>',
+};
+
+function icon(name, cls = '') {
+  const body = ICONS[name] || '';
+  return `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">${body}</svg>`;
+}
+
+function hydrateIcons(root = document) {
+  root.querySelectorAll('[data-icon]').forEach((el) => {
+    if (!el.dataset.iconDone) {
+      el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon));
+      el.dataset.iconDone = '1';
+    }
+  });
+}
+
+/* Генеративная «обложка» трека: стабильные цвета по id */
+const ART_PALETTES = [
+  ['#7b2ff7', '#c8b3ff', '#d6ff3d'],
+  ['#3b1366', '#ff6b9a', '#ffc94a'],
+  ['#9d5cff', '#6ff0c4', '#24093f'],
+  ['#5a1fb8', '#ffb3d1', '#e9dcff'],
+  ['#24093f', '#9d5cff', '#ff6b9a'],
+  ['#b18cff', '#3b1366', '#d6ff3d'],
+  ['#6a2bd9', '#ffc94a', '#ffe9f2'],
+  ['#d4c2ff', '#7b2ff7', '#ff6b9a'],
+];
+
+function artFor(id) {
+  const x = hashStr(id || 'x');
+  const pal = ART_PALETTES[x % ART_PALETTES.length];
+  return {
+    pal,
+    shape: (x >>> 4) % 4,
+    rot: ((x >>> 8) % 40) - 20,
+    tilt: (((x >>> 12) % 5) - 2) * 0.6,
+    pos: 20 + ((x >>> 16) % 60),
+  };
+}

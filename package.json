@@ -1,0 +1,70 @@
+{
+  "name": "my-music-library",
+  "productName": "My Music Library",
+  "version": "1.1.0",
+  "description": "Личная библиотека минусовок",
+  "main": "desktop/main.js",
+  "author": "My Music Library",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "icon": "electron desktop/build-icon.js",
+    "dist": "electron-builder --win nsis",
+    "test:media": "node test/make-media.js",
+    "test": "node test/run-e2e.js",
+    "screenshots": "node test/run-e2e.js screenshots"
+  },
+  "devDependencies": {
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource-variable/unbounded": "^5.3.0",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "local.mymusiclibrary.app",
+    "productName": "My Music Library",
+    "copyright": "My Music Library",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "desktop/main.js",
+      "desktop/preload.js",
+      "desktop/storage.js",
+      "src/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "executableName": "MyMusicLibrary"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "My Music Library",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "MyMusicLibrary-Setup-${version}.exe"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Arsipa/MyMusicLibrary.git"
+  },
+  "homepage": "https://github.com/Arsipa/MyMusicLibrary"
+}

@@ -1,0 +1,12 @@
+# зависимости и сборки
+node_modules/
+dist/
+
+# результаты и файлы автотестов (создаются заново: node test/make-media.js)
+test/shots/
+test/media/
+
+# служебное
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,529 @@
+/* ============ Карточки треков ============ */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 30px 26px;
+  padding: 6px 4px 20px;
+}
+
+.card {
+  --tilt: 0deg;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border-radius: 30px 30px 30px 10px;
+  box-shadow: var(--shadow-sm);
+  transform: rotate(var(--tilt));
+  transition: transform 0.4s var(--ease), box-shadow 0.3s;
+  cursor: pointer;
+  content-visibility: auto;
+  contain-intrinsic-size: 250px 420px;
+  outline: none;
+  animation: cardIn 0.5s var(--ease) backwards;
+}
+.card:nth-child(4n + 2) {
+  border-radius: 30px 10px 30px 30px;
+}
+.card:nth-child(4n + 3) {
+  border-radius: 10px 30px 30px 30px;
+}
+.card:nth-child(4n + 4) {
+  border-radius: 30px 30px 10px 30px;
+}
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) rotate(calc(var(--tilt) * 3));
+  }
+}
+.card:hover,
+.card:focus-visible {
+  transform: translateY(-6px) rotate(0deg);
+  box-shadow: 0 26px 40px -20px rgba(36, 9, 63, 0.55), 8px 8px 0 var(--c1);
+}
+.card:focus-visible {
+  outline: 3px solid var(--violet);
+  outline-offset: 4px;
+}
+.card.current {
+  box-shadow: 0 0 0 3px var(--ink), 8px 8px 0 var(--lime);
+}
+
+/* обложка */
+.card-art {
+  position: relative;
+  padding: 10px 10px 0;
+}
+.art {
+  --a1: #7b2ff7;
+  --a2: #c8b3ff;
+  --a3: #d6ff3d;
+  --rot: 0deg;
+  --pos: 50%;
+  position: relative;
+  overflow: hidden;
+  background: var(--a1);
+  border-radius: 22px;
+  isolation: isolate;
+}
+.card .art {
+  aspect-ratio: 1.25;
+}
+.art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.art-shape {
+  position: absolute;
+  display: block;
+  transition: transform 0.8s var(--ease);
+}
+.art-letter {
+  position: absolute;
+  right: 10px;
+  top: -12px;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 96px;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--a2) 80%, white);
+  opacity: 0.85;
+  z-index: 2;
+}
+
+/* 4 варианта генеративного рисунка */
+.art-s0 .s1 {
+  width: 140%;
+  aspect-ratio: 1;
+  left: -20%;
+  top: 38%;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, var(--a2) 0 6px, transparent 6px 14px);
+  opacity: 0.6;
+}
+.art-s0 .s2 {
+  width: 46%;
+  aspect-ratio: 1;
+  left: var(--pos);
+  top: 14%;
+  border-radius: 50%;
+  background: var(--a3);
+  transform: translateX(-50%);
+}
+.art-s0 .s3 {
+  width: 30%;
+  height: 120%;
+  left: 8%;
+  top: -10%;
+  background: var(--a2);
+  transform: rotate(var(--rot));
+  border-radius: 99px;
+  mix-blend-mode: soft-light;
+}
+
+.art-s1 {
+  background: linear-gradient(160deg, var(--a1), color-mix(in srgb, var(--a1) 60%, black));
+}
+.art-s1 .s1 {
+  inset: 18% 22% -40% -10%;
+  border-radius: 60% 40% 50% 50% / 50% 60% 40% 50%;
+  background: var(--a2);
+  transform: rotate(var(--rot));
+}
+.art-s1 .s2 {
+  width: 34%;
+  aspect-ratio: 1;
+  right: 10%;
+  bottom: 12%;
+  border-radius: 50%;
+  border: 10px solid var(--a3);
+}
+.art-s1 .s3 {
+  width: 60%;
+  height: 8px;
+  left: 10%;
+  top: 16%;
+  border-radius: 9px;
+  background: var(--a3);
+  box-shadow: 0 16px 0 color-mix(in srgb, var(--a3) 60%, transparent), 0 32px 0 color-mix(in srgb, var(--a3) 30%, transparent);
+}
+
+.art-s2 {
+  background: var(--a2);
+}
+.art-s2 .s1 {
+  width: 90%;
+  aspect-ratio: 1;
+  left: -15%;
+  bottom: -45%;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, var(--a1) 0 2px, color-mix(in srgb, var(--a1) 80%, black) 2px 5px);
+  box-shadow: 0 0 0 4px var(--a2);
+}
+.art-s2 .s1::after {
+  content: '';
+  position: absolute;
+  inset: 38%;
+  border-radius: 50%;
+  background: var(--a3);
+}
+.art-s2 .s2 {
+  width: 40%;
+  height: 40%;
+  right: 8%;
+  top: 10%;
+  background: var(--a3);
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  transform: rotate(var(--rot));
+}
+.art-s2 .s3 {
+  width: 20%;
+  aspect-ratio: 1;
+  right: 30%;
+  bottom: 14%;
+  border-radius: 50%;
+  background: var(--a1);
+  opacity: 0.4;
+}
+
+.art-s3 {
+  background: conic-gradient(from var(--rot) at 70% 30%, var(--a1), var(--a2), var(--a1));
+}
+.art-s3 .s1 {
+  inset: auto -10% -30% -10%;
+  height: 70%;
+  background: var(--a3);
+  border-radius: 50% 50% 0 0 / 30% 30% 0 0;
+  transform: rotate(calc(var(--rot) * 0.3));
+}
+.art-s3 .s2 {
+  width: 26%;
+  aspect-ratio: 1;
+  left: 14%;
+  top: 14%;
+  background: var(--paper);
+  border-radius: 50%;
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--paper) 35%, transparent);
+}
+.art-s3 .s3 {
+  width: 120%;
+  height: 22px;
+  left: -10%;
+  bottom: 36%;
+  background: repeating-linear-gradient(90deg, var(--a1) 0 8px, transparent 8px 16px);
+  transform: rotate(-6deg);
+  opacity: 0.55;
+}
+
+.card:hover .s1 {
+  transform: rotate(calc(var(--rot) + 12deg)) scale(1.05);
+}
+.card:hover .s2 {
+  transform: translateY(-6px) scale(1.08) rotate(var(--rot));
+}
+.art-s0 .s2 {
+  transform: translateX(-50%);
+}
+.card:hover .art-s0 .s2 {
+  transform: translateX(-50%) scale(1.1);
+}
+
+.art.mini {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  flex: none;
+}
+.art.mini .s3 {
+  display: none;
+}
+.art.mini .art-s1 .s2,
+.art-s1.mini .s2 {
+  border-width: 4px;
+}
+
+.art-badge {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(36, 9, 63, 0.75);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+.art-badge .ic {
+  width: 18px;
+  height: 18px;
+}
+
+/* эквалайзер «сейчас играет» */
+.eq {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 26px;
+  padding: 5px 7px;
+  border-radius: 10px;
+  background: var(--ink);
+}
+.eq i {
+  width: 4px;
+  height: 30%;
+  border-radius: 2px;
+  background: var(--lime);
+  animation: eq 0.9s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.eq i:nth-child(2) {
+  animation-delay: -0.3s;
+  background: var(--coral);
+}
+.eq i:nth-child(3) {
+  animation-delay: -0.6s;
+}
+.eq i:nth-child(4) {
+  animation-delay: -0.15s;
+  background: var(--lavender);
+}
+.eq i:nth-child(5) {
+  animation-delay: -0.45s;
+}
+.card.playing .eq i,
+body .d-play.on ~ .eq i,
+.d-art-wrap:has(.d-play.on) .eq i {
+  animation-play-state: running;
+}
+@keyframes eq {
+  0%,
+  100% {
+    height: 25%;
+  }
+  50% {
+    height: 100%;
+  }
+}
+
+/* кнопка воспроизведения — выезжает за край обложки */
+.card-play {
+  position: absolute;
+  right: 0;
+  bottom: -26px;
+  z-index: 4;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--lime);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 6px var(--paper);
+  transition: transform 0.35s var(--ease), background 0.2s, color 0.2s;
+}
+.card-play .ic {
+  width: 32px;
+  height: 32px;
+  margin-left: 3px;
+}
+.card-play.on .ic {
+  margin-left: 0;
+}
+.card-play:hover {
+  transform: scale(1.12) rotate(-10deg);
+  background: var(--lime);
+  color: var(--ink);
+}
+.card-play.on {
+  background: var(--coral);
+  color: #fff;
+  animation: pulse 1.6s ease-out infinite;
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 6px var(--paper), 0 0 0 6px rgba(255, 107, 154, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 6px var(--paper), 0 0 0 22px rgba(255, 107, 154, 0);
+  }
+}
+
+.card-cats {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 60%;
+}
+.card-cat {
+  --c: var(--violet);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--paper);
+  color: var(--ink);
+  border-left: 5px solid var(--c);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* тело */
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px 14px;
+  flex: 1;
+}
+.card-title {
+  margin: 0;
+  padding-right: 64px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+.card-warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--danger);
+  background: #ffe8ef;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+.card-warn .ic {
+  width: 15px;
+  height: 15px;
+}
+.card-warn.draft {
+  color: #9a6a00;
+  background: #fff1c4;
+}
+.card.missing .art {
+  filter: grayscale(0.9) opacity(0.6);
+}
+.card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.card-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.meter-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+.meter-bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+}
+.meter-bars i {
+  --i: 0;
+  flex: 1;
+  height: calc(30% + var(--i) * 70%);
+  border-radius: 3px;
+  background: var(--lilac);
+  transition: background 0.3s;
+}
+.meter-bars i.on {
+  background: color-mix(in srgb, var(--coral) calc(var(--i) * 100%), var(--violet));
+}
+.meter-val {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 18px;
+  min-width: 22px;
+  text-align: right;
+}
+
+.card-note {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  font-style: italic;
+  padding-left: 12px;
+  border-left: 3px solid var(--c2, var(--lavender));
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+.card-dur {
+  font-weight: 800;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  margin-right: auto;
+}
+.card-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 7px 10px 7px 14px;
+  border-radius: 99px;
+  background: var(--canvas);
+  transition: background 0.15s, gap 0.2s;
+}
+.card-open .ic {
+  width: 16px;
+  height: 16px;
+  transform: rotate(180deg);
+}
+.card-open:hover {
+  background: var(--ink);
+  color: #fff;
+  gap: 8px;
+}

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' mml://cover data:; media-src mml://media; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self' mml://media">
+  <title>My Music Library</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/cards.css">
+  <link rel="stylesheet" href="css/player.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <div class="decor" aria-hidden="true">
+    <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+    <span class="grain"></span>
+  </div>
+
+  <div id="app" class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-vinyl"><span></span></div>
+        <div class="brand-text">
+          <span class="brand-my">My Music</span>
+          <span class="brand-lib">Library</span>
+        </div>
+      </div>
+      <nav class="top-actions">
+        <button class="btn-add" id="btnAdd" title="Добавить минусовку">
+          <span class="btn-add-icon" data-icon="plus"></span>
+          <span class="btn-add-label">Добавить<br>трек</span>
+        </button>
+        <button class="top-btn tb-attr" id="btnAttributes"><span data-icon="sliders"></span><em>Атрибуты</em></button>
+        <button class="top-btn tb-cat" id="btnCategories"><span data-icon="tag"></span><em>Категории</em></button>
+        <button class="top-btn tb-store" id="btnStorage"><span data-icon="shield"></span><em>Хранилище</em></button>
+        <button class="top-btn tb-help" id="btnHelp" title="Пройти обучение заново"><span data-icon="help"></span><em>Обучение</em></button>
+      </nav>
+    </header>
+
+    <section class="filterbar" id="filterbar"></section>
+    <section class="filter-panel" id="filterPanel" hidden></section>
+    <div id="banners" class="banners"></div>
+
+    <section class="drafts" id="drafts" hidden></section>
+
+    <main class="library" id="library">
+      <div class="lib-head" id="libHead"></div>
+      <div class="grid" id="grid"></div>
+      <div class="empty" id="empty" hidden></div>
+    </main>
+  </div>
+
+  <section class="detail" id="detail" hidden></section>
+
+  <div class="player" id="player" hidden></div>
+  <div class="video-dock" id="videoDock" hidden></div>
+
+  <div class="drop-hint" id="dropHint" hidden>
+    <div><span data-icon="note"></span><b>Отпустите, чтобы добавить</b></div>
+  </div>
+  <div id="modals"></div>
+  <div class="toasts" id="toasts"></div>
+  <div class="menu-layer" id="menuLayer"></div>
+
+  <script src="js/util.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/attributes.js"></script>
+  <script src="js/categories.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/tracks.js"></script>
+  <script src="js/backup.js"></script>
+  <script src="js/dropdown.js"></script>
+  <script src="js/tour.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

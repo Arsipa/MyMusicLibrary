@@ -1,0 +1,218 @@
+/* ============ Адаптация под размер окна ============ */
+
+@media (max-width: 1180px) {
+  .filterbar {
+    flex-wrap: wrap;
+  }
+  .cat-strip {
+    order: 5;
+    flex-basis: 100%;
+  }
+  .search {
+    flex: 1;
+  }
+  .search:focus-within {
+    width: auto;
+  }
+  .player {
+    grid-template-columns: minmax(150px, 1fr) minmax(260px, 1.5fr) auto;
+  }
+  .pl-vol {
+    width: 64px;
+  }
+}
+
+@media (max-width: 980px) {
+  .top-btn em {
+    display: none;
+  }
+  .top-btn {
+    padding: 6px;
+  }
+  .d-hero {
+    grid-template-columns: 1fr;
+  }
+  .d-art-wrap {
+    max-width: 420px;
+  }
+  .d-cols {
+    grid-template-columns: 1fr;
+  }
+  .form-attrs {
+    grid-template-columns: 1fr;
+  }
+  .type-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pl-volume,
+  .pl-open {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .brand-text {
+    display: none;
+  }
+  .btn-add-label {
+    font-size: 13px;
+  }
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 24px 18px;
+  }
+  .player {
+    grid-template-columns: 1fr auto;
+    height: auto;
+    padding: 10px 14px;
+    gap: 8px 12px;
+  }
+  .pl-center {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  body.has-player {
+    --player-h: 150px;
+  }
+  .transfer-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-top {
+    grid-template-columns: 1fr;
+  }
+  .cover-box {
+    padding-top: 0;
+  }
+  .d-attrs {
+    grid-template-columns: 1fr;
+  }
+  .store-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .video-dock {
+    width: min(360px, 70vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Адаптация по высоте: всё должно помещаться на экран ноутбука ---------- */
+.topbar {
+  padding-top: clamp(10px, 2.2vh, 22px);
+  padding-bottom: clamp(30px, 4.6vh, 46px);
+}
+.brand-vinyl {
+  width: clamp(44px, 6.4vh, 64px);
+  height: clamp(44px, 6.4vh, 64px);
+}
+.brand-my {
+  font-size: clamp(22px, 3vh, 28px);
+}
+.brand-lib {
+  font-size: clamp(23px, 3.2vh, 30px);
+}
+.btn-add {
+  padding-top: clamp(8px, 1.2vh, 12px);
+  padding-bottom: clamp(8px, 1.2vh, 12px);
+}
+.btn-add-icon {
+  width: clamp(40px, 5.6vh, 52px);
+  height: clamp(40px, 5.6vh, 52px);
+}
+.top-btn > span {
+  width: clamp(40px, 5.4vh, 50px);
+  height: clamp(40px, 5.4vh, 50px);
+}
+.top-btn {
+  padding-top: clamp(4px, 1vh, 10px);
+  padding-bottom: clamp(2px, 0.8vh, 8px);
+}
+.empty {
+  padding: clamp(4px, 1.5vh, 30px) 0 clamp(10px, 3vh, 60px);
+}
+.welcome-art svg {
+  width: auto;
+  height: clamp(110px, 22vh, 220px);
+}
+.welcome-title {
+  font-size: clamp(24px, 4.4vh, 38px);
+  margin: clamp(4px, 1vh, 10px) 0 clamp(6px, 1.2vh, 12px);
+}
+.welcome-text {
+  font-size: clamp(14px, 2vh, 17px);
+  margin-bottom: clamp(6px, 1.4vh, 14px);
+}
+.btn-add.big {
+  padding-top: clamp(10px, 1.6vh, 16px);
+  padding-bottom: clamp(10px, 1.6vh, 16px);
+  font-size: clamp(15px, 2.1vh, 18px);
+}
+.btn-add.big .btn-add-icon {
+  width: clamp(46px, 7vh, 64px);
+  height: clamp(46px, 7vh, 64px);
+}
+.welcome .muted.small {
+  margin: clamp(6px, 1.2vh, 14px) 0 0;
+}
+@media (max-height: 760px) {
+  .lib-head {
+    margin: 4px 0 10px;
+  }
+  .lib-count .big {
+    font-size: 32px;
+  }
+}
+@media (max-height: 760px) and (min-width: 821px) {
+  .player {
+    height: 74px;
+    bottom: 8px;
+  }
+  body.has-player {
+    --player-h: 88px;
+  }
+  .pl-art .art {
+    width: 50px;
+    height: 50px;
+  }
+  .d-hero {
+    grid-template-columns: minmax(220px, 320px) 1fr;
+  }
+  .d-play {
+    width: 84px;
+    height: 84px;
+  }
+}
+
+/* Колонка на всю высоту: пустой экран центрируется в свободном месте, без лишней прокрутки */
+.app {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(var(--player-h) + 16px);
+}
+.app > * {
+  flex-shrink: 0;
+}
+.library {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.lib-head:empty {
+  display: none;
+}
+.empty:not([hidden]) {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 0 0;
+}
