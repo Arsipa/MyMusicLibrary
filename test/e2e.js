@@ -118,7 +118,8 @@ module.exports = async (win, getLib) => {
     await sleep(600);
     let cats = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'categories.json'), 'utf8')).categories;
     ok(cats[0].color === '#123abc', 'свой цвет категории сохраняется: ' + cats[0].color);
-    await js(`document.querySelector('.cp-pop .btn').click(); 1`);
+    // палитра закрывается сама, если окно на миг потеряло фокус — тогда просто закрываем меню
+    await js(`(() => { const b = document.querySelector('.cp-pop .btn'); if (b) b.click(); else UI.closeMenu(); return 1; })()`);
     await sleep(200);
     const order0 = cats.map((c) => c.name);
     // тянем первую категорию вниз на три строки
