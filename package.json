@@ -1,7 +1,7 @@
 {
   "name": "my-music-library",
   "productName": "My Music Library",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Личная библиотека минусовок",
   "main": "desktop/main.js",
   "author": "Arsipa",
