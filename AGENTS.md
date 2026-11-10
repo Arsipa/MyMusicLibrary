@@ -44,7 +44,7 @@ test/e2e.js         сценарий автотеста; test/screenshots.js; te
 | player.js | `Player.play/toggle/stop/forget/isPlaying/onChange(fn)→unsubscribe/mountVideo` | один общий `<video>` на всё приложение |
 | filters.js | `Filters.renderBar/renderPanel/match/sort/reset/...` | поиск, фильтры, сортировка, строка категорий со стрелками |
 | tracks.js | `Cards.*`, `Tracks.openForm/addFromPaths/remove/restore/purge/replaceFile/...`, `openClip()` | карточки, форма трека, импорт (дубликаты спрашиваются в `askDuplicate` ДО копирования) |
-| backup.js | `Backup.open(tab)` (окно «Настройки»: копии / корзина / перенос / о приложении), `periodic`, `integrity`, `recoveryScreen` | настройки, бэкапы |
+| backup.js | `Backup.open(tab)` (окно «Настройки»: копии (у каждой «Посмотреть» = `api.revealBackup`, «Скачать» = `api.pickBackupDest` + `api.saveBackupTo`) / корзина / перенос / о приложении), `periodic`, `integrity`, `recoveryScreen` | настройки, бэкапы |
 | dropdown.js | `dropdown({options,value,onChange})` | стилизованный select (системных `<select>` в проекте нет — так и держать) |
 | colorpicker.js | `colorButton(value, onChange)`, `COLOR_PRESETS` | палитра цвета |
 | datepicker.js | `dateRangePicker({from, to, min, max, onChange(from, to)})` → {el, set, get}: одна кнопка, первый клик — начало, второй — конец | свой календарь (системных `<input type=date>` в проекте нет — так и держать) |

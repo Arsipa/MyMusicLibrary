@@ -318,6 +318,26 @@ function registerIpc() {
     await library.createBackup('before-restore');
     return library.restoreFrom(src, { linkAllowed: true });
   });
+  // показать резервную копию в Проводнике
+  handle('backup:reveal', async (name) => {
+    const dir = library.backupPath(name);
+    if (!TEST) shell.showItemInFolder(dir);
+    return dir;
+  });
+  // сохранить резервную копию: сначала выбор папки, потом копирование (отдельно — чтобы показать индикатор только на копирование)
+  handle('backup:pick-dest', async () => {
+    const r = await dialog.showOpenDialog(win, {
+      title: 'Куда сохранить резервную копию?',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
+  });
+  handle('backup:save-to', async (name, dest) => {
+    if (!dest || !path.isAbsolute(String(dest)) || !fs.existsSync(dest)) throw new LibError('not_found');
+    const target = await library.exportBackup(name, String(dest));
+    if (!TEST) shell.showItemInFolder(target);
+    return target;
+  });
   handle('backup:export', async () => {
     const r = await dialog.showOpenDialog(win, {
       title: 'Куда сохранить копию библиотеки?',

@@ -364,6 +364,19 @@ module.exports = async (win, getLib) => {
     await js(`[...document.querySelectorAll('.segmented button')].find(b=>b.textContent==='Раз в месяц').click(); 1`);
     await sleep(500);
     await shot('12-backups');
+    ok(await js(`(() => { const r=document.querySelector('.backup-row'); return !!r.querySelector('.backup-reveal') && r.querySelector('.backup-reveal').textContent.includes('Посмотреть') && !!r.querySelector('.backup-save') && r.querySelector('.backup-save').textContent.includes('Скачать'); })()`), 'у резервной копии есть кнопки «Посмотреть» и «Скачать»');
+    {
+      const bkName = fs.readdirSync(getLib().backupsDir).find((b) => !b.endsWith('.part'));
+      const shown = await js(`window.api.revealBackup(${JSON.stringify(bkName)}).then(r => r.value)`);
+      ok(shown && path.resolve(shown) === path.resolve(getLib().backupsDir, bkName), '«Посмотреть» открывает папку именно этой копии');
+      ok(!(await js(`window.api.revealBackup('../../etc').then(r => r.ok)`)), 'посмотреть можно только папки резервных копий');
+      const outDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'mml-bk-out-'));
+      const saved = await js(`window.api.saveBackupTo(${JSON.stringify(bkName)}, ${JSON.stringify(outDir)}).then(r => r.value)`);
+      ok(!!saved && fs.existsSync(path.join(saved, 'data', 'library.json')) && fs.existsSync(path.join(saved, 'storage', 'tracks')) && fs.readdirSync(path.join(saved, 'storage', 'tracks')).length === fs.readdirSync(path.join(getLib().backupsDir, bkName, 'storage', 'tracks')).length, '«Скачать» сохраняет полную копию в выбранную папку');
+      const saved2 = await js(`window.api.saveBackupTo(${JSON.stringify(bkName)}, ${JSON.stringify(outDir)}).then(r => r.value)`);
+      ok(!!saved2 && saved2 !== saved, 'повторное скачивание не затирает прошлую копию');
+      fs.rmSync(outDir, { recursive: true, force: true });
+    }
     const st = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'settings.json'), 'utf8'));
     ok(st.autoBackup === true && st.backupEvery === 'month', 'включение и частота автокопий сохранены');
     ok(!!st.lastAutoBackup, 'при включении сразу сделана первая автокопия');

@@ -5423,3 +5423,22 @@ body.sorting * {
   height: 14px !important;
   color: var(--lavender) !important;
 }
+
+/* Резервные копии: «Посмотреть» и «Скачать» рядом с «Восстановить» */
+.backup-btns {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.backup-btns .btn-ghost {
+  background: #fff;
+}
+.backup-btns .btn-ghost:hover:not(:disabled) {
+  background: var(--lilac);
+}
+.backup-btns .btn .ic {
+  width: 16px;
+  height: 16px;
+}

@@ -634,6 +634,31 @@ class Library {
     return target;
   }
 
+  /** Путь к папке резервной копии (только внутри backups/) */
+  backupPath(name) {
+    const dir = path.join(this.backupsDir, path.basename(String(name || '')));
+    if (!path.basename(String(name || '')) || !fs.existsSync(path.join(dir, 'data', 'library.json'))) throw new LibError('not_found');
+    return dir;
+  }
+
+  /** Сохранить резервную копию в выбранную папку — настоящими файлами, её потом можно открыть через «Перенос» */
+  async exportBackup(name, destParent) {
+    const src = this.backupPath(name);
+    let target = path.join(destParent, `MyMusicLibrary_${path.basename(src)}`);
+    for (let i = 2; fs.existsSync(target); i++) target = path.join(destParent, `MyMusicLibrary_${path.basename(src)}_${i}`);
+    const size = await dirSize(src);
+    if (freeSpace(destParent) < size + SPACE_RESERVE) throw new LibError('no_space');
+    try {
+      await this.copyLibraryTree(src, target, false);
+      const man = path.join(src, 'manifest.json');
+      if (fs.existsSync(man)) await fsp.copyFile(man, path.join(target, 'manifest.json'));
+    } catch (e) {
+      await fsp.rm(target, { recursive: true, force: true }).catch(() => {});
+      throw mapFsError(e);
+    }
+    return target;
+  }
+
   async stats() {
     return {
       root: this.root,

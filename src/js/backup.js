@@ -249,8 +249,14 @@ const Backup = (() => {
             null,
             h('span.backup-ic', { icon: b.auto ? 'sparkle' : 'shield' }),
             h('div.backup-main', null, h('b', { text: fmtDate(b.createdAt) }), h('span', { text: [REASON_LABELS[b.reason] || 'Копия', b.trackCount !== undefined ? `${b.trackCount} ${plural(b.trackCount, 'трек', 'трека', 'треков')}` : null].filter(Boolean).join(' · ') })),
-            h('button.btn.btn-soft.sm', { on: { click: () => restore(b) } }, h('span', { icon: 'undo' }), 'Восстановить'),
-            h('button.icon-btn.sm.danger', { title: 'Удалить копию', icon: 'trash', on: { click: () => del(b) } })
+            h(
+              'div.backup-btns',
+              null,
+              h('button.btn.btn-ghost.sm.backup-reveal', { title: 'Открыть папку, где лежит эта копия', on: { click: () => reveal(b) } }, h('span', { icon: 'folder' }), 'Посмотреть'),
+              h('button.btn.btn-ghost.sm.backup-save', { title: 'Сохранить эту копию в другую папку — например, на флешку', on: { click: () => saveTo(b) } }, h('span', { icon: 'download' }), 'Скачать'),
+              h('button.btn.btn-soft.sm', { on: { click: () => restore(b) } }, h('span', { icon: 'undo' }), 'Восстановить'),
+              h('button.icon-btn.sm.danger', { title: 'Удалить копию', icon: 'trash', on: { click: () => del(b) } })
+            )
           )
         );
       }
@@ -263,6 +269,22 @@ const Backup = (() => {
       if (!r.ok) return UI.alert({ title: 'Копия не создана', text: r.message });
       UI.toast('Резервная копия создана', { kind: 'ok' });
       render();
+    }
+
+    async function reveal(b) {
+      const r = await window.api.revealBackup(b.name);
+      if (!r.ok) UI.toast('Не получилось открыть папку с копией: ' + r.message, { kind: 'error' });
+    }
+
+    async function saveTo(b) {
+      const pick = await window.api.pickBackupDest();
+      if (!pick.ok) return UI.toast(pick.message, { kind: 'error' });
+      if (!pick.value) return;
+      const busy = UI.busy('Сохраняю копию… Большие библиотеки копируются дольше.');
+      const r = await window.api.saveBackupTo(b.name, pick.value);
+      busy.done();
+      if (!r.ok) return UI.alert({ title: 'Копия не сохранена', text: r.message });
+      UI.toast('Копия сохранена, папка с ней открыта. Вернуть её можно в «Перенос и папка» → «Загрузить библиотеку из копии».', { kind: 'ok', duration: 8000 });
     }
 
     async function restore(b) {
