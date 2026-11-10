@@ -154,6 +154,7 @@ const LIMITS = {
   trackTitle: 120,
   artist: 100,
   perfTitle: 80,
+  perfDesc: 600,
   notes: 1500,
   attrText: 120,
   attrTextarea: 50000, // многострочные атрибуты — например, полный текст песни; предел только от случайной вставки мегабайтов
@@ -338,6 +339,15 @@ const ICONS = {
   help: '<circle cx="12" cy="12" r="8.6" stroke-width="2.1"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.6" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="16.9" r="1.2" fill="currentColor" stroke="none"/>',
   arrow: '<path d="M5 12h13.5M13 6.5l5.5 5.5-5.5 5.5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
   chevron: '<path d="m7 9.5 5 5 5-5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  copy: '<rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.4" stroke-width="2.1"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5" stroke-width="2.1" stroke-linecap="round"/>',
+  chart: '<path d="M4 4v16h16" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 9v6M13 6.5v6M17.5 10v4" stroke-width="3" stroke-linecap="round"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.6" stroke-width="2.1"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" stroke-width="2.1" stroke-linecap="round"/>',
+  headphones: '<path d="M4 15v-3a8 8 0 0 1 16 0v3" stroke-width="2.1" stroke-linecap="round"/><rect x="3.5" y="14" width="4.5" height="6.5" rx="1.8" stroke-width="2.1"/><rect x="16" y="14" width="4.5" height="6.5" rx="1.8" stroke-width="2.1"/>',
+  trendUp: '<path d="m4 16 5.5-5.5 4 4L20 8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 8h5v5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  trendDown: '<path d="m4 8 5.5 5.5 4-4L20 16" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 16h5v-5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="3" stroke-width="2.1"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke-width="2.1" stroke-linecap="round"/><circle cx="8.5" cy="14.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="14.5" r="1.2" fill="currentColor" stroke="none"/>',
+  // симметричная четырёхлучевая звезда ровно по центру (для кнопок «Ура!»)
+  cheer: '<path d="M12 1.5c.9 6 3.6 8.8 10.5 10.5C15.6 13.7 12.9 16.5 12 22.5c-.9-6-3.6-8.8-10.5-10.5C8.4 10.3 11.1 7.5 12 1.5z" fill="currentColor" stroke="none"/><circle cx="19.3" cy="4.7" r="1.5" fill="currentColor" stroke="none"/><circle cx="4.7" cy="19.3" r="1.1" fill="currentColor" stroke="none"/>',
   sparkle: '<path d="M12 3c.6 4.6 2.4 6.4 7 7-4.6.6-6.4 2.4-7 7-.6-4.6-2.4-6.4-7-7 4.6-.6 6.4-2.4 7-7z" fill="currentColor" stroke="none"/>',
 };
 

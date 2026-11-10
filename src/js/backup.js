@@ -45,8 +45,8 @@ const Backup = (() => {
 
   function referenced() {
     const tracks = Lib.tracks().map((t) => t.fileName);
-    const performances = Lib.tracks().flatMap((t) => (t.performances || []).map((p) => p.fileName));
-    const trash = S.library.trash.flatMap((x) => [x.track.fileName, ...(x.track.performances || []).map((p) => p.fileName)]);
+    const performances = Lib.tracks().flatMap((t) => Lib.perfFiles(t));
+    const trash = S.library.trash.flatMap((x) => [x.track.fileName, ...Lib.perfFiles(x.track)]);
     const covers = [...Lib.tracks(), ...S.library.trash.map((x) => x.track)].map((t) => t.cover).filter(Boolean);
     return { tracks, trash, covers, performances };
   }

@@ -121,6 +121,7 @@ const Store = (() => {
       t.notes = t.notes || '';
       t.performances = Array.isArray(t.performances) ? t.performances : [];
       t.history = Array.isArray(t.history) ? t.history : [];
+      if (t.vocal && !(t.vocal.fileName || t.vocal.url)) delete t.vocal;
     }
     return lib;
   }
@@ -178,6 +179,8 @@ const Lib = {
   attr: (id) => S.attributes.attributes.find((a) => a.id === id),
   cats: () => S.categories.categories,
   cat: (id) => S.categories.categories.find((c) => c.id === id),
+  /** Все файлы песни в storage/performances: выступления + запись с голосом */
+  perfFiles: (t) => [...(t.performances || []).map((p) => p.fileName), ...(t.vocal && t.vocal.fileName ? [t.vocal.fileName] : [])],
 };
 
 function mediaUrl(fileName) {

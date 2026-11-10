@@ -38,7 +38,8 @@ test/e2e.js         сценарий автотеста; test/screenshots.js; te
 | util.js | `h()`, `appendChildren`, `clear`, `icon()`/`ICONS`, `LIMITS`, `withCounter(input, max, {quiet})`, `cleanLine/cleanText`, `parseClipUrl`, `siteName`, `parseFileName` («Исполнитель - Название»), `fullTitle(t)`, цвета (`normHex`, `hexToHsv`, `hsvToHex`, `textOn`), `artFor`, форматтеры | общие помощники |
 | ui.js | `UI.openModal/confirm/choose({choices, extra})/alert/toast/menu/closeMenu/busy` | окна (в `choose` кнопки столбиком: primary сверху, danger снизу), меню, уведомления (с крестиком) |
 | storage.js | `S` (состояние), `Store.save(doc)/load()`, `Lib.*`, `DEFAULT_*`, `mediaUrl/coverUrl` | данные + сохранение |
-| attributes.js | `ATTR_TYPES`, `OPTION_COLORS`, `Attr.*` (isEmpty, text, display, field, optionColor), `AttributesManager.open()`, `AttributesManager.create(onCreated)` (из формы трека) | атрибуты |
+| attributes.js | `ATTR_TYPES`, `OPTION_COLORS`, `Attr.*` (isEmpty, text, display, field(attr, v, {onChange, allowAdd}) — allowAdd: кнопка «+ Вариант» в форме песни, optionColor), `AttributesManager.open()`, `AttributesManager.create(onCreated)` (из формы трека) | атрибуты |
+| cover.js | `Cover.mood(t)/palette(t)/svg(t, mini)/describe(t)` | генеративная SVG-обложка по характеру песни (настроение по ключевым словам вариантов и категорий, цвета вариантов, «фаза» круга = знание песни); id внутри SVG уникальны на каждую вставку |
 | categories.js | `Categories.open/picker/count`, `CATEGORY_COLORS` | категории |
 | player.js | `Player.play/toggle/stop/forget/isPlaying/onChange(fn)→unsubscribe/mountVideo` | один общий `<video>` на всё приложение |
 | filters.js | `Filters.renderBar/renderPanel/match/sort/reset/...` | поиск, фильтры, сортировка, строка категорий со стрелками |
@@ -46,16 +47,19 @@ test/e2e.js         сценарий автотеста; test/screenshots.js; te
 | backup.js | `Backup.open(tab)` (окно «Настройки»: копии / корзина / перенос / о приложении), `periodic`, `integrity`, `recoveryScreen` | настройки, бэкапы |
 | dropdown.js | `dropdown({options,value,onChange})` | стилизованный select (системных `<select>` в проекте нет — так и держать) |
 | colorpicker.js | `colorButton(value, onChange)`, `COLOR_PRESETS` | палитра цвета |
+| datepicker.js | `dateRangePicker({from, to, min, max, onChange(from, to)})` → {el, set, get}: одна кнопка, первый клик — начало, второй — конец | свой календарь (системных `<input type=date>` в проекте нет — так и держать) |
 | sortable.js | `makeSortable(list, {item, handle, onMove})`, `dragHandle()`, `moveItem` | перетаскивание за ручку |
 | history.js | `History.snapshot/diff/record/section` | история изменений песни (запись в `openForm.submit`, `Tracks.setAttr`, `replaceFile`, `restore`, видео) |
 | celebrate.js | `Celebrate.isCrowned/crown/check/show` | празднование максимума шкалы (`attr.celebrate`), салют на canvas, корона |
-| performances.js | `Performances.add/watch/rename/remove/section`, `perfUrl` | видео выступлений на странице песни |
+| performances.js | `Performances.add(id, paths, {kind, best})/watch/edit/setBest/remove/section/bestSection/openPlayer/importOne`, `perfUrl` | «Репетиции» (видео/аудио, описание) и «Финальное выступление» (best: true, «эталонище») |
+| vocal.js | `Vocal.play(t)`, `Vocal.field(t)` (поле формы: collect/commit/discard) | запись песни с голосом: файл в storage/performances или ссылка |
+| stats.js | `Knowledge.of/block/chip` (встроенная шкала «Уровень», 1–100), `Stats.open/close/render/timeline/candles` | страница «Статистика»: средние по шкалам, линейный график по истории (`t.history`, у изменений шкал есть `key: 'attr:<id>'`) |
 | tour.js | `Tour.start()` | обучение (шаги в `buildSteps()`) |
 | app.js | `App.init/refresh/renderGrid/openDetail/closeDetail` | главный экран, страница трека, запуск |
 
 ## Данные
-Папка: `%APPDATA%\My Music Library\Library\` (`data/*.json`, `storage/tracks|covers|trash|performances`, `backups/`). Видео выступлений — `storage/performances/p_*.ext`; при удалении песни уходят в `trash` вместе с ней. Путь меняется в настройках, хранится в `config.json`.
-- `library.json`: `{version, tracks:[...], trash:[{track, deletedAt}]}`. Трек: `id, title, artist?, performances[] ({id, fileName, originalFileName, title, size, duration, hasVideo, addedAt}), history[] ({at, kind: added|edit|file|restored|perf-add|perf-remove, changes:[{label, from, to, edited?}]}), fileName (уникальный id+расширение), originalFileName, mime, size, duration, hasVideo, cover, notes, clipUrl?, categories[], attributes{attrId: value}, status: 'ready'|'draft', createdAt, updatedAt`.
+Папка: `%APPDATA%\My Music Library\Library\` (`data/*.json`, `storage/tracks|covers|trash|performances`, `backups/`). Записи выступлений и запись с голосом — `storage/performances/p_*.ext` (список файлов песни — `Lib.perfFiles(t)`); при удалении песни уходят в `trash` вместе с ней. Путь меняется в настройках, хранится в `config.json`.
+- `library.json`: `{version, tracks:[...], trash:[{track, deletedAt}]}`. Трек: `id, title, artist?, performances[] ({id, fileName, originalFileName, title, description, size, duration, hasVideo, addedAt, best?, bestAt?}), vocal? ({fileName, originalFileName, size, duration, hasVideo} | {url}), history[] ({at, kind: added|edit|file|restored|perf-add|perf-remove|perf-best, changes:[{key?, label, from, to, edited?}]}), fileName (уникальный id+расширение), originalFileName, mime, size, duration, hasVideo, cover, notes, clipUrl?, categories[], attributes{attrId: value}, status: 'ready'|'draft', createdAt, updatedAt`.
 - `attributes.json`: `{attributes:[{id, name, type, required, showOnCard, options:[{id,label,color}], min, max, celebrate?}]}`; типы: text, textarea, select, multiselect, number, scale.
 - `categories.json`: `{categories:[{id, name, color}]}`; `settings.json`: sort, volume, autoBackup(false по умолч.), backupEvery(day|week|month), lastAutoBackup, tutorialDone.
 - Значения атрибутов хранятся по **id** атрибута/варианта → переименование ничего не ломает.
@@ -71,7 +75,7 @@ test/e2e.js         сценарий автотеста; test/screenshots.js; te
 - CSS дописывается в конец `style.css`; цвета — токены из `:root` (`--ink`, `--violet`, `--lavender`, `--lilac`, `--canvas`, `--paper`, `--lime`, `--coral`, `--sun`, `--mint`, `--danger`). Шрифты Unbounded (заголовки) и Manrope встроены.
 - Переводы строк: LF (закреплено в `.gitattributes`); `README.txt` — CRLF + BOM (для Блокнота). Правя файлы node-скриптом, учитывай это.
 - Обратные слэши (регулярки `\s`, пути `%APPDATA%\…`) теряются, если вставлять их через bash-heredoc в node-скрипт. Такие места правь инструментом точечной замены (Edit), а не скриптом.
-- Автотест: хук `MML_TEST` работает только в незапакованной программе. В тестовом режиме `openUrl/openLink` не открывают браузер. Новую функцию — сразу покрывать проверкой в `test/e2e.js`.
+- Автотест: хук `MML_TEST` работает только в незапакованной программе; в тестовом режиме звук окна выключен. В тестовом режиме `openUrl/openLink` не открывают браузер. Новую функцию — сразу покрывать проверкой в `test/e2e.js`.
 - **Никогда не менять** `build.appId` и `productName` в package.json (по ним установщик удаляет прошлую версию, а программа находит данные).
 
 ## Git и релизы

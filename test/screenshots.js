@@ -101,23 +101,34 @@ module.exports = async (win) => {
     await js(`Filters.reset(); document.querySelector('.filter-btn').click(); 1`);
     await sleep(300);
 
+    // 4б. История роста оценок у всех песен (для статистики)
+    await js(`(async () => { const now = Date.now(); for (const t of Lib.tracks()) { const k = t.attributes.knowledge; const d0 = new Date(t.createdAt).getTime(); const v0 = Math.max(1, k - 3), v1 = Math.max(v0, k - 1); const at = (f) => new Date(d0 + (now - d0) * f).toISOString(); const ch = (a, b) => [{ key: 'attr:knowledge', label: 'Знание песни', from: a + ' из 10', to: b + ' из 10' }]; t.history = [{ at: t.createdAt, kind: 'added', changes: [] }]; if (v1 > v0) t.history.push({ at: at(0.4), kind: 'edit', changes: ch(v0, v1) }); if (k > v1) t.history.push({ at: at(0.8), kind: 'edit', changes: ch(v1, k) }); } await Store.save('library'); return 1; })()`);
     // 5. Страница трека: история изменений и видео выступления
     await js(`(() => { const t = Lib.track('trk_demo0'); const d0 = new Date(t.createdAt).getTime(); const at = (days) => new Date(d0 + days * 86400000).toISOString();
       t.history = [
         { at: at(0), kind: 'added', changes: [] },
-        { at: at(3), kind: 'edit', changes: [{ label: 'Знание песни', from: '4 из 10', to: '6 из 10' }] },
+        { at: at(3), kind: 'edit', changes: [{ key: 'attr:knowledge', label: 'Знание песни', from: '4 из 10', to: '6 из 10' }] },
         { at: at(6), kind: 'edit', changes: [{ label: 'Комментарий', from: 'Разобрать текст', to: 'Взять дыхание перед вторым припевом…', edited: true }, { label: 'Категории', from: 'Для концерта', to: 'Для концерта, Любимые' }] },
-        { at: at(9), kind: 'edit', changes: [{ label: 'Знание песни', from: '6 из 10', to: '8 из 10' }] },
+        { at: at(9), kind: 'edit', changes: [{ key: 'attr:knowledge', label: 'Знание песни', from: '6 из 10', to: '8 из 10' }] },
       ]; return 1; })()`);
     const perfVideo = path.join(MEDIA, 'Клип с видео.webm');
     if (fs.existsSync(perfVideo)) {
       await js(`Performances.add('trk_demo0', [${JSON.stringify(perfVideo)}]); 1`);
       await waitFor(`(Lib.track('trk_demo0').performances || []).length === 1`, 20000);
-      await js(`(async () => { const t = Lib.track('trk_demo0'); t.performances[0].title = 'Концерт в ДК, май 2026'; const h = t.history.pop(); h.changes[0].to = 'Концерт в ДК, май 2026'; t.history.push(h); await Store.save('library'); return 1; })()`);
+      await js(`(async () => { const t = Lib.track('trk_demo0'); t.performances[0].title = 'Концерт в ДК, май 2026'; t.performances[0].best = true; t.performances[0].bestAt = new Date().toISOString(); t.performances[0].description = 'Лучшее исполнение: чистый верх в припеве, дыхание на месте.'; const h = t.history.pop(); h.kind = 'perf-best'; h.changes[0].to = 'Концерт в ДК, май 2026'; t.history.push(h); await Store.save('library'); return 1; })()`);
+      for (const [file, title, desc] of [['Song.wav', 'Репетиция у педагога', 'Поработать над переходом во второй куплет.'], ['Колыбельная.wav', 'Прогон дома', '']]) {
+        await js(`Performances.add('trk_demo0', [${JSON.stringify(path.join(MEDIA, file))}], { kind: 'audio' }); 1`);
+        await sleep(1500);
+        await js(`(async () => { const t = Lib.track('trk_demo0'); const p = t.performances[t.performances.length - 1]; p.title = ${JSON.stringify(title)}; p.description = ${JSON.stringify(desc)}; await Store.save('library'); App.refresh(); return 1; })()`);
+      }
+      await js(`document.querySelectorAll('.toast').forEach(t => t.remove()); 1`);
     }
     await js(`App.openDetail('trk_demo0'); 1`);
     await sleep(800);
     await shot('track-page');
+    await js(`document.querySelector('.d-cols').scrollIntoView({ block: 'start' }); document.getElementById('detail').scrollTop -= 16; 1`);
+    await sleep(900);
+    await shot('track-side');
     await js(`document.querySelector('.d-history').scrollIntoView({ block: 'start' }); document.getElementById('detail').scrollTop -= 20; 1`);
     await sleep(900);
     await shot('track-history');
@@ -166,6 +177,15 @@ module.exports = async (win) => {
     await js(`(() => { document.querySelectorAll('.modal-overlay').forEach(o => o.remove()); return 1; })()`);
     await sleep(300);
 
+    // 7б. Статистика
+    await js(`document.querySelectorAll('.toast').forEach(t => t.remove()); Stats.open(); 1`);
+    await sleep(400);
+    await js(`document.querySelector('.st-period button[data-id="month"]').click(); 1`);
+    await sleep(500);
+    await js(`document.querySelector('#stats .st-controls').scrollIntoView({ block: 'start' }); document.getElementById('stats').scrollTop -= 16; 1`);
+    await sleep(600);
+    await shot('stats');
+    await js(`Stats.close(); 1`);
     // 8. Настройки
     await js(`S.settings.autoBackup = true; S.settings.backupEvery = 'week'; Backup.open(); 1`);
     await sleep(500);

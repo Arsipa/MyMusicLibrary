@@ -44,7 +44,33 @@ const Celebrate = (() => {
           stopFireworks();
           resolve();
         },
-        actions: ['spacer', { label: 'Ура!', kind: 'primary', icon: 'sparkle', onClick: (m) => m.close('ok') }, 'spacer'],
+        actions: ['spacer', { label: 'Ура!', kind: 'primary', icon: 'cheer', onClick: (m) => m.close('ok') }, 'spacer'],
+      });
+    });
+  }
+
+  /** Лучшее выступление загружено — песня выучена и вошла в репертуар */
+  function repertoire(t, perf) {
+    return new Promise((resolve) => {
+      const stopFireworks = fireworks();
+      const count = Lib.tracks().filter((x) => (x.performances || []).some((p) => p.best)).length;
+      UI.openModal({
+        title: 'Эталонище! 🏆',
+        className: 'small.celebrate.repertoire',
+        accent: 'add',
+        body: h(
+          'div.celebrate-body',
+          null,
+          h('div.celebrate-crown.gold', { icon: 'crown' }),
+          h('p.celebrate-big', { text: fullTitle(t) }),
+          h('p.confirm-text', null, 'Финальное выступление — «', h('b', { text: perf.title }), '». Песня выучена и теперь официально в твоём репертуаре. Горжусь тобой! 💜'),
+          h('p.celebrate-count', { text: `Песен в репертуаре: ${count}` })
+        ),
+        onClose: () => {
+          stopFireworks();
+          resolve();
+        },
+        actions: ['spacer', { label: 'Ура!', kind: 'primary', icon: 'cheer', onClick: (m) => m.close('ok') }, 'spacer'],
       });
     });
   }
@@ -134,5 +160,5 @@ const Celebrate = (() => {
     };
   }
 
-  return { isCrowned, crown, reached, check, show };
+  return { isCrowned, crown, reached, check, show, repertoire };
 })();

@@ -78,7 +78,8 @@ const Attr = {
   },
 
   /** Поле ввода. Возвращает {el, get(), focus()} */
-  field(attr, value, { onChange } = {}) {
+  field(attr, value, opts = {}) {
+    const { onChange } = opts;
     const changed = () => onChange && onChange();
     switch (attr.type) {
       case 'text': {
@@ -102,29 +103,80 @@ const Attr = {
             b.setAttribute('aria-pressed', on);
           });
         };
-        (attr.options || []).forEach((o, i) => {
-          box.appendChild(
-            h(
-              'button.opt',
-              {
-                type: 'button',
-                dataset: { id: o.id },
-                style: { '--c': Attr.optionColor(attr, o.id) },
-                on: {
-                  click: () => {
-                    if (multi) sel.has(o.id) ? sel.delete(o.id) : sel.add(o.id);
-                    else sel = sel === o.id ? null : o.id;
-                    paint();
-                    changed();
-                  },
+        const optBtn = (o) =>
+          h(
+            'button.opt',
+            {
+              type: 'button',
+              dataset: { id: o.id },
+              style: { '--c': Attr.optionColor(attr, o.id) },
+              on: {
+                click: () => {
+                  if (multi) sel.has(o.id) ? sel.delete(o.id) : sel.add(o.id);
+                  else sel = sel === o.id ? null : o.id;
+                  paint();
+                  changed();
                 },
               },
-              h('span.opt-dot'),
-              o.label
-            )
+            },
+            h('span.opt-dot'),
+            o.label
           );
-        });
-        if (!(attr.options || []).length) box.appendChild(h('span.val-empty', { text: 'В этом списке пока нет вариантов — добавьте их в «Атрибутах».' }));
+        (attr.options || []).forEach((o) => box.appendChild(optBtn(o)));
+        if (opts.allowAdd) {
+          // новый вариант прямо из формы песни: сразу сохраняется в атрибуте и выбирается
+          const addBtn = h('button.opt-new', { type: 'button', title: 'Добавить новый вариант в этот список', 'aria-label': 'Добавить вариант', icon: 'plus' });
+          const inp = h('input.input.opt-new-input', { type: 'text', placeholder: 'Новый вариант', maxLength: LIMITS.optionLabel });
+          const okBtn = h('button.opt-new-ok', { type: 'button', title: 'Добавить', icon: 'check' });
+          const editor = h('span.opt-new-edit', { hidden: true }, inp, okBtn);
+          const close = () => {
+            editor.hidden = true;
+            addBtn.hidden = false;
+            inp.value = '';
+          };
+          const commit = async () => {
+            const label = cleanLine(inp.value, LIMITS.optionLabel);
+            if (!label) return close();
+            let o = attr.options.find((x) => normalize(x.label) === normalize(label));
+            if (!o) {
+              o = { id: uid('o_'), label, color: OPTION_COLORS[attr.options.length % OPTION_COLORS.length] };
+              attr.options.push(o);
+              if (!(await Store.save('attributes'))) {
+                attr.options.pop();
+                return UI.toast('Не получилось сохранить вариант', { kind: 'error' });
+              }
+              box.insertBefore(optBtn(o), addBtn);
+              box.querySelector(':scope > .val-empty')?.remove();
+              UI.toast(`Вариант «${label}» добавлен в «${attr.name}»`, { kind: 'ok' });
+              Filters.renderBar();
+              Filters.renderPanel();
+            }
+            if (multi) sel.add(o.id);
+            else sel = o.id;
+            paint();
+            changed();
+            close();
+          };
+          addBtn.addEventListener('click', () => {
+            addBtn.hidden = true;
+            editor.hidden = false;
+            inp.focus();
+          });
+          okBtn.addEventListener('click', commit);
+          inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commit();
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+              close();
+            }
+          });
+          inp.addEventListener('blur', () => setTimeout(() => !editor.hidden && document.activeElement !== okBtn && (inp.value.trim() ? commit() : close()), 150));
+          box.append(addBtn, editor);
+        } else if (!(attr.options || []).length) box.appendChild(h('span.val-empty', { text: 'В этом списке пока нет вариантов — добавьте их в «Атрибутах».' }));
         paint();
         return {
           el: box,

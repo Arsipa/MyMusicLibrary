@@ -38,6 +38,7 @@ module.exports = async (win, getLib) => {
     // типичный 15" ноутбук: 1920×1080 при масштабе 150% → окно примерно 1280×650 полезной площади
     win.setContentSize(1280, 650);
     await waitFor(`document.body.classList.contains('ready')`);
+    ok(wc.isAudioMuted(), 'автотест идёт без звука');
 
     // ---- Обучение при первом запуске
     await waitFor(`Tour.isActive() && document.querySelector('.tour-bubble .tour-title')`, 5000);
@@ -465,6 +466,23 @@ module.exports = async (win, getLib) => {
     await click('.modal.choose .modal-actions .btn', 'Всё равно добавить');
     await waitFor(`document.querySelector('.track-form')`, 15000);
     ok(fs.readdirSync(getLib().tracksDir).length === tracksBefore + 1, '«Всё равно добавить» копирует файл и открывает форму');
+    {
+      await click('.modal-actions .btn', 'Заполнить позже');
+      await sleep(500);
+      const longDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'mml-long-'));
+      const longFile = path.join(longDir, 'Очень_длинное_имя_исполнителя_без_единого_пробела_которое_не_помещается_в_окно_никак_вообще - Колыбельная.wav');
+      fs.copyFileSync(path.join(MEDIA, 'Колыбельная.wav'), longFile);
+      await js(`Tracks.addFromPaths([${JSON.stringify(longFile)}]); 1`);
+      await waitFor(`document.querySelector('.modal.choose .dup-list')`);
+      await sleep(400);
+      await shot('20c-duplicate-long');
+      ok(await js(`(() => { const m=document.querySelector('.modal.choose'); const b=m.querySelector('.modal-body'); return b.scrollWidth <= b.clientWidth + 1 && m.scrollWidth <= m.clientWidth + 1; })()`), 'окно дубликата с длинным именем файла не прокручивается вбок');
+      await click('.modal.choose .modal-actions .btn', 'Отменить, это дубликат');
+      await sleep(500);
+      fs.rmSync(longDir, { recursive: true, force: true });
+      await js(`(() => { const d=Lib.tracks().filter(t=>t.status==='draft').pop(); return d ? Tracks.openForm(d.id, { mode: 'new' }) && 1 : 1; })()`);
+      await waitFor(`document.querySelector('.track-form')`, 8000);
+    }
 
     // ---- Окно «Трек ещё не сохранён»: кнопки столбиком
     await js(`document.querySelector('.form-modal .modal-x').click(); 1`);
@@ -573,7 +591,7 @@ module.exports = async (win, getLib) => {
     await waitFor(`document.querySelector('.d-perf .perf-tile')`, 20000);
     await sleep(800);
     ok(fs.readdirSync(path.join(getLib().root, 'storage', 'performances')).length === 1, 'видео скопировано в storage/performances');
-    ok(await js(`document.querySelector('.d-history .hist-item').textContent.includes('Добавлено видео выступления')`), 'добавление видео записано в историю');
+    ok(await js(`document.querySelector('.d-history .hist-item').textContent.includes('Добавлена запись')`), 'добавление видео записано в историю');
     ok(await js(`!!document.querySelector('.card[data-id="${waltzId}"] .art-badge.perf')`), 'на карточке значок «есть видео выступления»');
     await js(`document.querySelector('.d-perf').scrollIntoView(); 1`);
     await shot('23-performances');
@@ -608,6 +626,256 @@ module.exports = async (win, getLib) => {
     const bk = await js(`window.api.createBackup('manual').then(r => r.value)`);
     ok(fs.existsSync(path.join(getLib().backupsDir, bk, 'storage', 'performances')), 'папка с видео входит в резервную копию');
     await js(`App.closeDetail(); Player.stop(); 1`);
+
+    // ---- 1.6.0: аудио-выступление, описание, лучшее выступление
+    const wid = JSON.stringify(waltzId);
+    const perfDir = path.join(getLib().root, 'storage', 'performances');
+    await js(`App.openDetail(${wid}); Performances.add(${wid}, [${JSON.stringify(path.join(MEDIA, 'Song.wav'))}], { kind: 'audio' }); 1`);
+    await waitFor(`document.querySelector('.d-perf .perf-tile .perf-shot.is-audio')`, 20000);
+    await sleep(500);
+    ok(await js(`Lib.track(${wid}).performances[0].hasVideo === false`), 'аудиозапись выступления добавлена (без видео)');
+    await js(`document.querySelector('.d-perf .perf-shot').click(); 1`);
+    await waitFor(`document.querySelector('.perf-modal audio.perf-audio-player')`);
+    ok(true, 'аудиовыступление открывается в проигрывателе');
+    await shot('25-perf-audio');
+    ok(await js(`(() => { const box=document.querySelector('.perf-listen-art').getBoundingClientRect(), a=document.querySelector('.perf-listen-art .art').getBoundingClientRect(); return Math.abs(box.width-a.width)<2 && Math.abs(box.height-a.height)<2; })()`), 'при прослушивании обложка занимает весь круг');
+    await js(`document.querySelector('.perf-modal .modal-x').click(); 1`);
+    await sleep(400);
+    await js(`document.querySelector('.d-perf .perf-desc-add').click(); 1`);
+    await sleep(400);
+    await js(`(() => { const m=[...document.querySelectorAll('.modal')].pop(); m.querySelector('textarea').value='Репетиция перед концертом'; [...m.querySelectorAll('.modal-actions .btn')].find(b=>b.textContent.includes('Сохранить')).click(); return 1; })()`);
+    await sleep(600);
+    ok(await js(`Lib.track(${wid}).performances[0].description === 'Репетиция перед концертом' && document.querySelector('.d-perf .perf-desc').textContent.includes('Репетиция')`), 'описание выступления сохраняется и видно в списке');
+    // лучшее выступление: загрузка в отдельный блок → поздравление
+    ok(await js(`!!document.querySelector('.d-best.is-empty .perf-add-video')`), 'есть пустой блок «Лучшее выступление» с загрузкой');
+    ok(await js(`(() => { const p=document.querySelector('.d-best.is-empty').getBoundingClientRect(); const bs=[...document.querySelectorAll('.d-best.is-empty .best-actions .btn')]; const l=Math.min(...bs.map(b=>b.getBoundingClientRect().left)), r=Math.max(...bs.map(b=>b.getBoundingClientRect().right)); return Math.abs((l+r)/2 - (p.left+p.right)/2) < 6; })()`), 'кнопки финального выступления по центру');
+    ok(await js(`[...document.querySelectorAll('.d-best.is-empty .best-actions .btn')].every(b => getComputedStyle(b).backgroundColor === 'rgb(36, 9, 63)')`), 'кнопки финального выступления тёмные — контрастные на золоте');
+    await js(`Performances.add(${wid}, [${JSON.stringify(path.join(MEDIA, 'Колыбельная.wav'))}], { kind: 'audio', best: true }); 1`);
+    await waitFor(`document.querySelector('.modal.repertoire')`, 20000);
+    ok(await js(`!!document.querySelector('canvas.fireworks') && document.querySelector('.modal.repertoire').textContent.includes('репертуар')`), 'загрузка лучшего выступления — салют и поздравление «в репертуаре»');
+    await sleep(700);
+    await shot('26-repertoire');
+    ok(await js(`(() => { const b=[...document.querySelectorAll('.modal.repertoire .modal-actions .btn')].find(x=>x.textContent.includes('Ура')); const i=b.querySelector('.ic').getBoundingClientRect(), r=b.getBoundingClientRect(); return i.width >= 24 && b.querySelector('.ic').innerHTML.includes('22.5') && Math.abs((i.top+i.bottom)/2 - (r.top+r.bottom)/2) <= 2; })()`), 'звёздочка на «Ура!» крупная и по центру');
+    await click('.modal.repertoire .modal-actions .btn', 'Ура');
+    await sleep(500);
+    ok(await js(`!!document.querySelector('.d-best.has .best-ribbon') && document.querySelector('.d-best.has .best-ribbon').textContent === 'Эталонище' && document.querySelector('.d-best .d-h').textContent.includes('Финальное выступление') && document.querySelectorAll('.d-perf .perf-tile').length === 1`), 'лучшее выступление в своём блоке, а не в общем списке');
+    ok(await js(`!!document.querySelector('.card[data-id="${waltzId}"] .art-badge.best')`), 'на карточке значок «в репертуаре»');
+    ok(fs.readdirSync(perfDir).length === 2, 'файлы выступлений скопированы');
+    wl = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'library.json'), 'utf8')).tracks.find((t) => t.id === waltzId);
+    ok(wl.history.some((e) => e.kind === 'perf-best'), 'лучшее выступление записано в историю');
+    ok(wl.history.some((e) => (e.changes || []).some((c) => c.key === 'attr:knowledge')), 'изменения шкал в истории помечены id атрибута (для статистики)');
+    // раскладка: справа комментарий + выступления по высоте левого блока, история — внизу
+    for (let i = 0; i < 6; i++) {
+      await js(`Performances.add(${wid}, [${JSON.stringify(path.join(MEDIA, 'Song.wav'))}], { kind: 'audio' }); 1`);
+      await sleep(900);
+    }
+    await waitFor(`document.querySelectorAll('.d-perf .perf-tile').length >= 7`, 20000);
+    await sleep(500);
+    ok(await js(`(() => { const l=document.querySelector('.d-chars').getBoundingClientRect(), r=document.querySelector('.d-side').getBoundingClientRect(); return Math.abs(l.height - r.height) < 2 && Math.abs(l.top - r.top) < 2; })()`), 'правая колонка по высоте равна левому блоку');
+    ok(await js(`(() => { const p=document.querySelector('.perf-list'); return p.scrollHeight > p.clientHeight + 10 && getComputedStyle(p).overflowY === 'auto'; })()`), 'много выступлений — внутри прокрутка');
+    ok(await js(`(() => { const h=document.querySelector('.d-history'), c=document.querySelector('.d-cols'); return !c.contains(h) && h.getBoundingClientRect().top >= c.getBoundingClientRect().bottom; })()`), 'история перенесена вниз');
+    await js(`document.querySelector('.d-cols').scrollIntoView(); 1`);
+    await shot('27-detail-layout');
+    ok(await js(`(() => { const t=document.querySelector('.d-perf-head .d-h').getBoundingClientRect(), b=document.querySelector('.d-perf-head .perf-add-btns').getBoundingClientRect(); return document.querySelector('.d-perf-head .d-h').textContent.includes('Репетиции') && (t.right <= b.left + 1 || t.bottom <= b.top + 1); })()`), 'заголовок «Репетиции» не наезжает на кнопки');
+    ok(await js(`(() => { const p=document.querySelector('.d-best').getBoundingClientRect(), t=document.querySelector('.d-best .best-tile').getBoundingClientRect(); return t.left - p.left >= 24; })()`), 'у финального выступления нормальный отступ слева');
+    ok(await js(`(() => { const r=document.querySelector('.best-ribbon').getBoundingClientRect(), t=document.querySelector('.d-best .d-h'); const rg=document.createRange(); rg.selectNodeContents(t); const tr=rg.getBoundingClientRect(); return tr.right <= r.left + 4 || tr.top >= r.bottom; })()`), 'лента «Эталонище» не закрывает заголовок');
+    // комментарий — своё маленькое окно, а не вся форма
+    if (await js(`!!document.querySelector('.d-notes-add')`)) {
+      ok(await js(`document.querySelector('.d-notes-add').textContent === 'Добавить комментарий'`), 'ссылка называется «Добавить комментарий»');
+      await js(`document.querySelector('.d-notes-add').click(); 1`);
+    } else await js(`document.querySelector('.d-notes-edit').click(); 1`);
+    await sleep(400);
+    ok(await js(`!!document.querySelector('.notes-modal textarea') && !document.querySelector('.track-form')`), 'комментарий редактируется в отдельном окне, без всей формы');
+    await js(`(() => { const m=document.querySelector('.notes-modal'); m.querySelector('textarea').value='Дыхание во втором куплете'; [...m.querySelectorAll('.modal-actions .btn')].find(b=>b.textContent.includes('Сохранить')).click(); return 1; })()`);
+    await sleep(600);
+    ok(await js(`Lib.track(${wid}).notes === 'Дыхание во втором куплете' && document.querySelector('.d-note-text').textContent.includes('Дыхание')`), 'комментарий сохраняется');
+    // копирование исполнителя и названия
+    const { clipboard } = require('electron');
+    await clipboard.writeText('');
+    await js(`document.querySelector('.d-title .copy-btn').click(); 1`);
+    await sleep(400);
+    ok((await clipboard.readText()) === (await js(`Lib.track(${wid}).title`)), 'кнопка копирует название песни');
+    if (await js(`!!document.querySelector('.d-artist .copy-btn')`)) {
+      await js(`document.querySelector('.d-artist .copy-btn').click(); 1`);
+      await sleep(400);
+      ok((await clipboard.readText()) === (await js(`Lib.track(${wid}).artist`)), 'кнопка копирует исполнителя');
+    }
+    // знание песни
+    const know = await js(`(() => { const t=Lib.track(${wid}); let s=0,m=0; for (const a of Lib.attrs()) if (a.type==='scale' && !Attr.isEmpty(a, t.attributes[a.id])) { s+=Number(t.attributes[a.id]); m+=a.max; } return m ? Math.max(1, Math.round(s/m*100)) : null; })()`);
+    ok(know !== null && (await js(`document.querySelector('.know .know-val').textContent`)) === know + '%', 'блок «Знание песни» считает сумму шкал / сумму максимумов');
+    ok(await js(`(() => { const vals={}; const sc=Lib.attrs().filter(a=>a.type==='scale'); sc.forEach(a=>vals[a.id]=a.max); const full=Knowledge.of({attributes:vals}).pct; sc.forEach(a=>vals[a.id]=Math.round(a.max*0.8)); const k=Knowledge.of({attributes:vals}); return full===100 && k.pct===Math.round(k.sum/k.max*100) && Knowledge.of({attributes:{}})===null; })()`), 'знание песни: все на максимуме = 100, пусто = нет оценки');
+    ok(await js(`!document.querySelector('.know input, .know button')`), 'знание песни нельзя изменить вручную');
+    ok(await js(`document.querySelector('.know-head b').textContent === 'Уровень' && !document.querySelector('.know .ic-lock, .know-lock') && !document.querySelector('.know').textContent.includes('считается')`), 'встроенная шкала называется «Уровень», без замочка и подписи «считается само»');
+    // удаление лучшего выступления
+    await js(`Performances.remove(Lib.track(${wid}), Performances.bestOf(Lib.track(${wid}))); 1`);
+    await sleep(300);
+    await click('.modal-actions .btn', 'Удалить');
+    await sleep(700);
+    ok(await js(`!Performances.bestOf(Lib.track(${wid})) && !!document.querySelector('.d-best.is-empty')`), 'лучшее выступление удаляется, блок снова пустой');
+    // сделать лучшим из списка
+    await js(`Performances.setBest(Lib.track(${wid}), Lib.track(${wid}).performances[0], true); 1`);
+    await waitFor(`document.querySelector('.modal.repertoire')`);
+    await click('.modal.repertoire .modal-actions .btn', 'Ура');
+    await sleep(400);
+    ok(await js(`Lib.track(${wid}).performances.filter(p=>p.best).length === 1`), 'выступление из списка можно сделать лучшим');
+
+    // ---- Запись с голосом: ссылка и файл
+    await js(`Tracks.openForm(${wid}); 1`);
+    await sleep(500);
+    await js(`document.querySelector('.vocal-mode button[data-mode="link"]').click(); 1`);
+    await js(`(() => { const i=document.querySelector('.vocal-link input'); i.value='youtu.be/abc123'; i.dispatchEvent(new Event('input',{bubbles:true})); return 1; })()`);
+    await js(`document.querySelector('.form-modal .vocal-field').scrollIntoView(); 1`);
+    await shot('28-vocal-form');
+    await click('.modal-actions .btn', 'Сохранить');
+    await sleep(600);
+    ok(await js(`!!Lib.track(${wid}).vocal && Lib.track(${wid}).vocal.url === 'https://youtu.be/abc123'`), 'запись с голосом — ссылкой');
+    ok(await js(`!!document.querySelector('.d-links .d-vocal')`), 'на странице песни кнопка «Послушать с голосом»');
+    const before = fs.readdirSync(perfDir).length;
+    const vinfo = await js(`window.api.importPerformance(${JSON.stringify(path.join(MEDIA, 'Song.wav'))}).then(r => r.value)`);
+    await js(`Tracks.openForm(${wid}); 1`);
+    await sleep(500);
+    await js(`document.querySelector('.vocal-field')._vocal._setFile({ fileName: ${JSON.stringify(vinfo.fileName)}, originalFileName: 'Song (с голосом).wav', size: ${vinfo.size}, duration: 8, hasVideo: false }); 1`);
+    await click('.modal-actions .btn', 'Сохранить');
+    await sleep(700);
+    ok(await js(`Lib.track(${wid}).vocal.fileName === ${JSON.stringify(vinfo.fileName)} && !Lib.track(${wid}).vocal.url`), 'запись с голосом — файлом');
+    ok(fs.readdirSync(perfDir).length === before + 1, 'файл записи с голосом хранится в библиотеке');
+    await js(`document.querySelector('.d-vocal').click(); 1`);
+    await waitFor(`document.querySelector('.perf-modal audio')`);
+    ok(true, 'запись с голосом играет во встроенном плеере');
+    await js(`document.querySelector('.perf-modal .modal-x').click(); 1`);
+    await sleep(300);
+    // убрать запись: файл удаляется после сохранения
+    await js(`Tracks.openForm(${wid}); 1`);
+    await sleep(500);
+    await js(`document.querySelector('.vocal-mode button[data-mode="none"]').click(); 1`);
+    await click('.modal-actions .btn', 'Сохранить');
+    await sleep(800);
+    ok(!fs.readdirSync(perfDir).includes(vinfo.fileName) && (await js(`!Lib.track(${wid}).vocal`)), 'убранная запись с голосом удаляется из хранилища');
+
+    // ---- Переход в песню из нижнего плеера
+    await js(`Player.play(${wid}); App.closeDetail(); 1`);
+    await sleep(500);
+    await js(`document.querySelector('.pl-title').click(); 1`);
+    await sleep(400);
+    ok(await js(`!document.getElementById('detail').hidden && document.querySelector('.d-title').textContent.includes(Lib.track(${wid}).title)`), 'нажатие на название в плеере открывает песню');
+    await js(`App.closeDetail(); 1`);
+    await sleep(300);
+    await js(`document.querySelector('.pl-art').click(); 1`);
+    await sleep(400);
+    ok(await js(`!document.getElementById('detail').hidden`), 'нажатие на пластинку в плеере открывает песню');
+    await js(`App.closeDetail(); Player.stop(); 1`);
+    await sleep(300);
+
+    // ---- Категории прямо с карточки
+    if (await js(`Lib.cats().length > 0`)) {
+      const catsBefore = await js(`Lib.track(${wid}).categories.length`);
+      await js(`document.querySelector('.card[data-id="${waltzId}"] .card-cat-add').click(); 1`);
+      await sleep(300);
+      const free = await js(`document.querySelectorAll('.ctx-menu .ctx-item:not(:disabled) .ctx-dot').length`);
+      if (free) await js(`document.querySelector('.ctx-menu .ctx-item:not(:disabled)').click(); 1`);
+      else await js(`UI.closeMenu(); 1`);
+      await sleep(600);
+      const catsAdded = await js(`Lib.track(${wid}).categories.length`);
+      ok(free === 0 || catsAdded === catsBefore + 1, 'плюсик на карточке добавляет категорию');
+      await js(`document.querySelector('.card[data-id="${waltzId}"]').scrollIntoView({block:'center'}); 1`);
+      await shot('29-card-cats');
+      ok(await js(`(() => { const c=document.querySelector('.card[data-id="${waltzId}"]'); const a=c.querySelector('.card-cat-add').getBoundingClientRect(), p=c.querySelector('.card-play').getBoundingClientRect(); return a.bottom <= p.top || a.right <= p.left; })()`), 'плюсик категорий не наезжает на кнопку «играть»');
+      ok(await js(`(() => { const c=document.querySelector('.card[data-id="${waltzId}"]'); const box=c.querySelector('.card-cats'); return box.lastElementChild.classList.contains('card-cat-add') && box.querySelectorAll('.card-cat:not(.more)').length <= 3; })()`), 'на карточке не больше 3 категорий, плюсик — под ними');
+      ok(await js(`(() => { const c=document.querySelector('.card[data-id="${waltzId}"]'); const k=c.querySelector('.card-know'); return !!k && k.previousElementSibling.classList.contains('card-title') && k.textContent.includes('Уровень'); })()`), '«Уровень» на карточке сразу под названием');
+      await js(`document.querySelector('.card[data-id="${waltzId}"] .card-cat-x').click(); 1`);
+      await sleep(400);
+      ok(await js(`!!document.querySelector('.modal') && document.querySelector('.modal').textContent.includes('Убрать категорию')`), 'удаление категории с карточки спрашивает подтверждение');
+      ok(await js(`!document.querySelector('.modal .confirm-icon')`), 'в маленьких предупреждениях нет иконки');
+      ok(await js(`(() => { const m=document.querySelector('.modal').getBoundingClientRect(), t=document.querySelector('.modal .modal-title'); const r=document.createRange(); r.selectNodeContents(t); const tr=r.getBoundingClientRect(); return Math.abs((tr.left+tr.right)/2 - (m.left+m.right)/2) < 12; })()`), 'заголовок окна стоит по центру');
+      await click('.modal-actions .btn', 'Отмена');
+      await sleep(400);
+      ok((await js(`Lib.track(${wid}).categories.length`)) === catsAdded, 'отмена — категория осталась');
+      await js(`document.querySelector('.card[data-id="${waltzId}"] .card-cat-x').click(); 1`);
+      await sleep(400);
+      await click('.modal-actions .btn', 'Убрать');
+      await sleep(600);
+      ok((await js(`Lib.track(${wid}).categories.length`)) === catsAdded - 1, 'категория убрана с карточки после подтверждения');
+    } else ok(false, 'нет категорий для проверки быстрого добавления');
+
+    // ---- Статистика
+    await js(`document.getElementById('btnStats').click(); 1`);
+    await waitFor(`!document.getElementById('stats').hidden && document.querySelector('.st-card.special .st-svg')`);
+    const scaleCount = await js(`Lib.attrs().filter(a=>a.type==='scale').length`);
+    ok((await js(`document.querySelectorAll('.st-card').length`)) === scaleCount + 1, 'на странице статистики — график на каждую шкалу и «знание песни»');
+    ok(await js(`document.querySelectorAll('.st-card .st-prog').length === document.querySelectorAll('.st-card').length`), 'у каждого графика есть прогресс за период');
+    ok(await js(`/^(\\d+(\\.\\d)?|—)$/.test(document.querySelectorAll('.st-card')[1].querySelector('.st-val').textContent)`), 'среднее округлено до десятых');
+    ok(await js(`!!document.querySelector('.st-card.special .st-line') && document.querySelectorAll('.st-card.special .st-dot').length > 0 && !!document.querySelector('.st-card.special .st-base')`), 'рисуется линия среднего с точками и пунктиром начала периода');
+    await shot('30-stats');
+    for (const step of ['week', 'month', 'year', 'day']) {
+      await js(`document.querySelector('.st-step button[data-id="${step}"]').click(); 1`);
+      await sleep(200);
+    }
+    await js(`document.querySelector('.st-period button[data-id="all"]').click(); 1`);
+    await sleep(200);
+    ok(await js(`document.querySelector('.st-period button.on').dataset.id === 'all' && document.querySelector('.st-step button.on').dataset.id === 'day'`), 'период и шаг переключаются');
+    await js(`document.querySelector('.st-period button[data-id="custom"]').click(); 1`);
+    await sleep(200);
+    ok(await js(`document.querySelectorAll('.st-dates .date-btn').length === 1 && !document.querySelector('#stats input[type=date]')`), 'свой период — одно поле с диапазоном (не системный календарь)');
+    await js(`document.querySelector('.st-dates .date-btn').click(); 1`);
+    await sleep(300);
+    ok(await js(`!!document.querySelector('.dp-pop .dp-day')`), 'открывается календарь');
+    await shot('33-datepicker');
+    const days = await js(`(() => { const d=[...document.querySelectorAll('.dp-pop .dp-day:not(:disabled)')]; const a=d[Math.min(8, d.length-1)], b=d[1]; a.click(); return [a.dataset.v, b.dataset.v]; })()`);
+    await sleep(200);
+    ok(await js(`!!document.querySelector('.dp-pop') && !!document.querySelector('.dp-pop .dp-day.edge')`), 'после первого клика календарь ждёт вторую дату');
+    await js(`document.querySelector('.dp-pop .dp-day[data-v="${days[1]}"]').click(); 1`);
+    await sleep(300);
+    ok((await js(`Stats.state.from`)) === [days[0], days[1]].sort()[0] && (await js(`Stats.state.to`)) === [days[0], days[1]].sort()[1] && (await js(`!document.querySelector('.dp-pop')`)), 'вторым кликом выбирается конец периода (порядок не важен)');
+    await js(`document.querySelector('.st-dates .date-btn').click(); 1`);
+    await sleep(300);
+    ok(await js(`document.querySelectorAll('.dp-pop .dp-day.in, .dp-pop .dp-day.edge').length >= 2`), 'выбранный период подсвечен в календаре');
+    await shot('34-daterange');
+    await js(`UI.closeMenu(); 1`);
+    ok(await js(`(() => { const D=86400000, s0=new Date(2026,0,15).getTime(), avg=(T)=>T<s0+D/2?2:3; const c=Stats.candles(avg,[s0+D/2],s0,s0+D-1,'day'); return c.length===1 && c[0].open===2 && c[0].close===3 && c[0].high===3 && c[0].low===2; })()`), 'свеча: открытие, закрытие, минимум и максимум за шаг');
+    ok(await js(`(() => { const t={id:'x',createdAt:new Date(0).toISOString(),attributes:{knowledge:8},history:[{at:new Date(1000).toISOString(),kind:'edit',changes:[{key:'attr:knowledge',label:'Знание песни',from:'3 из 10',to:'8 из 10'}]}]}; const tl=Stats.timeline(t, Lib.attr('knowledge')); return tl.length===2 && tl[0].v===3 && tl[1].v===8; })()`), 'история значений шкалы восстанавливается из истории песни');
+    await js(`document.querySelector('#stats .d-back').click(); 1`);
+    await sleep(300);
+    ok(await js(`document.getElementById('stats').hidden`), 'из статистики можно вернуться в библиотеку');
+
+    // ---- Обложки «по характеру песни»
+    ok(await js(`document.querySelectorAll('.card .art-gen svg.cv').length > 0`), 'песни без картинки получают рисунок-обложку');
+    ok(await js(`(() => { const f=(o)=>Cover.mood({id:'z', attributes:{mood:o}, categories:[]}).kind; return f('sad')==='sad' && f('happy')==='happy' && f('neutral')==='neutral'; })()`), 'настроение обложки берётся из выбранного характера');
+    ok(await js(`(() => { const lum=(hex)=>{const n=parseInt(hex.slice(1),16);return ((n>>16)&255)*.3+((n>>8)&255)*.59+(n&255)*.11;}; let sad=0, happy=0; for (let i=0;i<20;i++){ sad+=lum(Cover.palette({id:'s'+i,attributes:{mood:'sad'},categories:[]})[0]); happy+=lum(Cover.palette({id:'h'+i,attributes:{mood:'happy'},categories:[]})[0]); } return sad < happy - 60; })()`), 'грустные обложки заметно темнее весёлых');
+    ok(await js(`(() => { const set=new Set(); for (let i=0;i<40;i++) set.add(Cover.svg({id:'v'+i,attributes:{},categories:[]}).replace(/-\\d+/g,'')); return set.size === 40; })()`), 'рисунки у разных песен разные');
+    ok(await js(`(() => { const a=Cover.svg({id:'k1',attributes:{mood:'happy',knowledge:3},categories:[]}); const b=Cover.svg({id:'k1',attributes:{mood:'happy',knowledge:10},categories:[]}); return a.includes('<mask') && !b.includes('<mask') && a!==b; })()`), 'полнота круга на обложке зависит от знания песни');
+    ok(await js(`(() => { const s=Cover.svg({id:'c1',attributes:{mood:'happy',language:'en'},categories:[]}); return s.includes('cv-acc'); })()`), 'цвета выбранных вариантов попадают на обложку');
+    ok(await js(`(() => { const s=Cover.svg({id:'u1',attributes:{},categories:[]}); const d=document.createElement('div'); d.innerHTML=Cover.svg({id:'u1',attributes:{},categories:[]}); return d.querySelector('linearGradient').id !== (s.match(/linearGradient id="([^"]+)"/)||[])[1]; })()`), 'у каждой вставленной обложки свои id внутри SVG');
+    await shot('31-covers');
+
+    // ---- Новый вариант списка прямо из формы песни
+    await js(`Tracks.openForm(${wid}); 1`);
+    await sleep(500);
+    const multiId = await js(`(Lib.attrs().find(a=>a.type==='multiselect')||{}).id || ''`);
+    ok(!!multiId && (await js(`!!document.querySelector('.form-field[data-attr="${multiId}"] .opt-new')`)), 'у списка с несколькими вариантами в форме есть кнопка «+»');
+    ok(await js(`document.querySelector('.form-field[data-attr="${multiId}"] .opt-new').textContent.trim() === ''`), 'на кнопке только плюсик, без слова');
+    await js(`document.querySelector('.form-field[data-attr="${multiId}"] .opt-new').click(); 1`);
+    await sleep(150);
+    await js(`(() => { const i=document.querySelector('.form-field[data-attr="${multiId}"] .opt-new-input'); i.value='Ре минор'; i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); return 1; })()`);
+    await sleep(600);
+    ok(await js(`(() => { const a=Lib.attr('${multiId}'); const o=a.options.find(x=>x.label==='Ре минор'); return !!o && !!document.querySelector('.form-field[data-attr="${multiId}"] .opt.on[data-id="'+o.id+'"]'); })()`), 'новый вариант сохраняется в атрибуте и сразу выбран');
+    const attrsDoc = JSON.parse(fs.readFileSync(path.join(getLib().dataDir, 'attributes.json'), 'utf8'));
+    ok(attrsDoc.attributes.find((a) => a.id === multiId).options.some((o) => o.label === 'Ре минор'), 'вариант записан в attributes.json');
+    // повтор того же названия не создаёт дубликат
+    await js(`document.querySelector('.form-field[data-attr="${multiId}"] .opt-new').click(); 1`);
+    await js(`(() => { const i=document.querySelector('.form-field[data-attr="${multiId}"] .opt-new-input'); i.value='ре минор'; i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); return 1; })()`);
+    await sleep(500);
+    ok(await js(`Lib.attr('${multiId}').options.filter(x=>normalize(x.label)==='ре минор').length === 1`), 'одинаковый вариант не дублируется');
+    // живое превью обложки в форме меняется вместе с характером
+    const prevCover = await js(`document.querySelector('.form-modal .cover-box .art').innerHTML.replace(/-\\d+/g,'')`);
+    await js(`(() => { const cur=Lib.track(${wid}).attributes.mood; const b=[...document.querySelectorAll('.form-field[data-attr="mood"] .opt')].find(x=>x.dataset.id!==cur && x.dataset.id!=='neutral'); b.click(); return 1; })()`);
+    await sleep(400);
+    ok((await js(`document.querySelector('.form-modal .cover-box .art').innerHTML.replace(/-\\d+/g,'')`)) !== prevCover, 'превью обложки в форме меняется при выборе характера');
+    await js(`document.querySelector('.form-modal .cover-box').scrollIntoView(); 1`);
+    await shot('32-form-cover-option');
+    await click('.modal-actions .btn', 'Отмена');
+    await sleep(300);
+    await click('.modal-actions .btn', 'Не сохранять').catch(() => {});
+    await sleep(400);
 
     // ---- Узкое окно
     win.setSize(820, 900);

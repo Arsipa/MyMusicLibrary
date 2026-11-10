@@ -183,6 +183,7 @@ const Filters = (() => {
       { value: 'artist', label: 'Исполнитель', group: g1 },
       { value: 'duration', label: 'Длительность', group: g1 },
     ];
+    if (Knowledge.hasScales()) list.push({ value: 'knowledge', label: Knowledge.name(), group: g2 });
     for (const a of Lib.attrs()) {
       if (a.type === 'number' || a.type === 'scale' || a.type === 'select') list.push({ value: 'attr:' + a.id, label: a.name, group: g2 });
     }
@@ -409,6 +410,7 @@ const Filters = (() => {
       isText = true;
     } else if (key === 'createdAt' || key === 'updatedAt') getter = (t) => t[key] || '';
     else if (key === 'duration') getter = (t) => t.duration ?? null;
+    else if (key === 'knowledge') getter = (t) => (Knowledge.of(t) || {}).pct ?? null;
     else if (key.startsWith('attr:')) {
       const a = Lib.attr(key.slice(5));
       if (a && a.type === 'select') getter = (t) => {

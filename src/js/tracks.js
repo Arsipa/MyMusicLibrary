@@ -8,17 +8,20 @@ async function openClip(t) {
 }
 
 const Cards = (() => {
+  /** Обложка: своя картинка или рисунок «по характеру песни» (см. cover.js) */
   function art(t, mini) {
-    const a = artFor(t.id);
-    const el = h('div.art.art-s' + a.shape + (mini ? '.mini' : ''), {
-      style: { '--a1': a.pal[0], '--a2': a.pal[1], '--a3': a.pal[2], '--rot': a.rot + 'deg', '--pos': a.pos + '%' },
-    });
+    const pal = Cover.palette(t);
+    const el = h('div.art' + (mini ? '.mini' : ''), { style: { '--a1': pal[0], '--a2': pal[1], '--a3': pal[2] } });
     if (t.cover) {
       el.classList.add('has-cover');
       el.appendChild(h('img', { src: coverUrl(t.cover), alt: '', loading: 'lazy', draggable: 'false', on: { error: (e) => e.target.remove() } }));
     } else {
-      el.append(h('span.art-shape.s1'), h('span.art-shape.s2'), h('span.art-shape.s3'));
-      if (!mini) el.appendChild(h('span.art-letter', { text: (t.title || '?').trim().charAt(0).toUpperCase() }));
+      el.classList.add('art-gen');
+      el.innerHTML = Cover.svg(t, mini);
+      if (!mini) {
+        el.title = Cover.describe(t);
+        el.appendChild(h('span.art-letter', { text: (t.title || '?').trim().charAt(0).toUpperCase() }));
+      }
     }
     return el;
   }
@@ -39,7 +42,7 @@ const Cards = (() => {
   }
 
   function card(t) {
-    const a = artFor(t.id);
+    const a = { ...artFor(t.id), pal: Cover.palette(t) };
     const playing = Player.isPlaying(t.id);
     const current = Player.current() === t.id;
     const missing = S.runtime.missing.has(t.id);
@@ -48,7 +51,8 @@ const Cards = (() => {
     const badges = h('div.art-badges');
     if (t.hasVideo) badges.appendChild(h('span.art-badge', { icon: 'video', title: 'Минусовка с видео' }));
     const perfs = (t.performances || []).length;
-    if (perfs) badges.appendChild(h('span.art-badge.perf', { title: `Видео выступлений: ${perfs}` }, h('span', { icon: 'mic' }), perfs > 1 ? h('small', { text: perfs }) : null));
+    if (perfs) badges.appendChild(h('span.art-badge.perf', { title: `Записей репетиций: ${perfs}` }, h('span', { icon: 'mic' }), perfs > 1 ? h('small', { text: perfs }) : null));
+    if ((t.performances || []).some((p) => p.best)) badges.appendChild(h('span.art-badge.best', { title: 'Эталонище: есть финальное выступление', icon: 'crown' }));
     if (badges.children.length) artEl.appendChild(badges);
 
     const chips = h('div.card-chips');
@@ -104,7 +108,7 @@ const Cards = (() => {
           html: icon(playing ? 'pause' : 'play'),
           on: { click: () => Player.toggle(t.id) },
         }),
-        cats.length ? h('div.card-cats', null, cats.slice(0, 4).map((c) => h('span.card-cat', { style: { '--c': c.color }, title: c.name, text: c.name }))) : null
+        catsBox(t, cats)
       ),
       h(
         'div.card-body',
@@ -113,6 +117,7 @@ const Cards = (() => {
         t.status === 'draft' ? h('div.card-warn.draft', null, h('span', { icon: 'edit' }), 'Не заполнено до конца') : null,
         t.artist ? h('div.card-artist', { text: t.artist, title: t.artist }) : null,
         h('h3.card-title', { text: t.title, title: fullTitle(t) }),
+        Knowledge.chip(t),
         chips.children.length ? chips : null,
         meter,
         snip ? h('p.card-note', { text: snip }) : null,
@@ -127,6 +132,25 @@ const Cards = (() => {
       )
     );
     return el;
+  }
+
+  /** Категории в углу карточки: крестик у каждой (при наведении) и плюсик для новой */
+  function catsBox(t, cats) {
+    const shown = cats.slice(0, 3); // 3 категории, затем «+N», затем плюсик — столбик не доходит до кнопки «играть»
+    return h(
+      'div.card-cats',
+      null,
+      shown.map((c) =>
+        h(
+          'span.card-cat',
+          { style: { '--c': c.color }, title: c.name, dataset: { cat: c.id } },
+          h('span.card-cat-name', { text: c.name }),
+          h('button.card-cat-x', { type: 'button', title: `Убрать категорию «${c.name}»`, 'aria-label': `Убрать категорию «${c.name}»`, icon: 'close', on: { click: () => Tracks.removeCategory(t.id, c.id) } })
+        )
+      ),
+      cats.length > shown.length ? h('span.card-cat.more', { text: `+${cats.length - shown.length}`, title: cats.slice(3).map((c) => c.name).join(', ') }) : null,
+      h('button.card-cat-add', { type: 'button', title: 'Добавить категорию', 'aria-label': 'Добавить категорию', icon: 'plus', on: { click: (e) => Tracks.categoryMenu(t.id, e.currentTarget) } })
+    );
   }
 
   function menuFor(id, anchor, point) {
@@ -349,7 +373,7 @@ const Tracks = (() => {
         'Новый атрибут'
       );
       function addFieldRow(a) {
-        const f = Attr.field(a, t.attributes[a.id], { onChange: () => (dirty = true) });
+        const f = Attr.field(a, t.attributes[a.id], { onChange: () => (dirty = true), allowAdd: true });
         const err = h('p.field-error', { hidden: true });
         const wasEmpty = Attr.isEmpty(a, t.attributes[a.id]);
         f.err = err;
@@ -371,11 +395,22 @@ const Tracks = (() => {
       notes.value = t.notes || '';
       const clipInp = h('input.input', { type: 'url', value: t.clipUrl || '', placeholder: 'Например: https://www.youtube.com/watch?v=…', spellcheck: 'false' });
       const clipErr = h('p.field-error', { hidden: true });
+      const vocal = Vocal.field(t);
 
       const coverBox = h('div.cover-box');
+      // превью рисунка обновляется по ходу заполнения: видно, как характер песни меняет обложку
+      const liveValues = () => {
+        const vals = { ...t.attributes };
+        for (const { a, f } of fields) {
+          const v = f.get();
+          if (Attr.isEmpty(a, v)) delete vals[a.id];
+          else vals[a.id] = v;
+        }
+        return vals;
+      };
       const paintCover = () => {
         clear(coverBox);
-        const preview = Cards.art({ ...t, cover: pendingCover }, true);
+        const preview = Cards.art({ ...t, cover: pendingCover, attributes: liveValues(), categories: cats.get() }, true);
         coverBox.append(
           preview,
           h(
@@ -427,9 +462,27 @@ const Tracks = (() => {
         listenBtn
       );
 
+      let coverTimer = 0;
+      const repaintSoon = () => {
+        if (pendingCover) return;
+        clearTimeout(coverTimer);
+        coverTimer = setTimeout(paintCover, 120);
+      };
       const body = h(
         'div.track-form',
-        { on: { input: () => (dirty = true), click: (e) => e.target.closest('.opt, .scale-cell, .cat-chip') && (dirty = true) } },
+        {
+          on: {
+            input: () => {
+              dirty = true;
+              repaintSoon();
+            },
+            click: (e) => {
+              if (!e.target.closest('.opt, .scale-cell, .cat-chip')) return;
+              dirty = true;
+              repaintSoon();
+            },
+          },
+        },
         fileInfo,
         h(
           'div.form-top',
@@ -456,6 +509,13 @@ const Tracks = (() => {
           h('div.field-label', null, h('span', { icon: 'link' }), 'Ссылка на клип или видео', h('span.muted.small.label-note', { text: '— необязательно' })),
           withCounter(clipInp, LIMITS.clipUrl),
           clipErr
+        ),
+        h('h4.form-section', { text: 'Запись с голосом' }),
+        h(
+          'div.form-field',
+          null,
+          h('div.field-label', null, h('span', { icon: 'mic' }), 'Песня «с плюсом» — файлом или ссылкой', h('span.muted.small.label-note', { text: '— необязательно' })),
+          vocal.el
         )
       );
 
@@ -487,6 +547,7 @@ const Tracks = (() => {
 
       function finish(res) {
         stopListening();
+        if (res === 'cancelled') vocal.discard(!Lib.track(t.id));
         result = res;
         m.close('force');
         resolve(res);
@@ -520,7 +581,7 @@ const Tracks = (() => {
         // сохраняем то, что успели ввести, но оставляем статус черновика
         collect(false);
         t.status = 'draft';
-        await Store.save('library');
+        if (await Store.save('library')) vocal.commit(t.vocal);
         App.refresh();
         UI.toast('Трек сохранён как незаполненный — можно вернуться к нему в любой момент');
         finish(queue ? 'later' : 'later');
@@ -565,6 +626,8 @@ const Tracks = (() => {
           clipInp.classList.add('bad');
           firstBad = firstBad || clipInp;
         }
+        const voc = vocal.collect(validate);
+        if (validate && voc.error) firstBad = firstBad || voc.input;
         const values = {};
         for (const { a, f, err, row, wasEmpty } of fields) {
           const v = f.get();
@@ -616,6 +679,10 @@ const Tracks = (() => {
           if (clip.url) t.clipUrl = clip.url;
           else delete t.clipUrl;
         }
+        if (!voc.error) {
+          if (voc.vocal) t.vocal = voc.vocal;
+          else delete t.vocal;
+        }
         if (originalCover && originalCover !== pendingCover) window.api.removeCover(originalCover);
         t.cover = pendingCover || null;
         t.updatedAt = new Date().toISOString();
@@ -633,6 +700,7 @@ const Tracks = (() => {
         else History.record(t, History.diff(histBefore, History.snapshot(t)));
         const ok = await Store.save('library');
         if (!ok) return;
+        vocal.commit(t.vocal);
         App.refresh();
         UI.toast(wasDraft ? `«${t.title}» теперь в библиотеке` : 'Сохранено', { kind: 'ok' });
         // сначала закрываем форму, потом праздник (если шкала дошла до максимума), и только потом — следующая форма
@@ -666,7 +734,7 @@ const Tracks = (() => {
     const mv = await window.api.trashTrackFile(t.fileName);
     if (!mv.ok) return UI.alert({ title: 'Не получилось удалить', text: mv.message });
     S.library.tracks = S.library.tracks.filter((x) => x.id !== id);
-    for (const p of t.performances || []) await window.api.trashTrackFile(p.fileName, 'performances');
+    for (const f of Lib.perfFiles(t)) await window.api.trashTrackFile(f, 'performances');
     if (mv.value) S.library.trash.unshift({ track: t, deletedAt: new Date().toISOString() });
     else if (t.cover) window.api.removeCover(t.cover);
     S.runtime.missing.delete(id);
@@ -683,7 +751,7 @@ const Tracks = (() => {
     const entry = S.library.trash[idx];
     const r = await window.api.untrashTrackFile(entry.track.fileName);
     if (!r.ok) return UI.alert({ title: 'Не получилось вернуть трек', text: r.message });
-    for (const p of entry.track.performances || []) await window.api.untrashTrackFile(p.fileName, 'performances');
+    for (const f of Lib.perfFiles(entry.track)) await window.api.untrashTrackFile(f, 'performances');
     S.library.trash.splice(idx, 1);
     History.record(entry.track, [], 'restored');
     entry.track.updatedAt = new Date().toISOString();
@@ -710,7 +778,7 @@ const Tracks = (() => {
     const r = await window.api.purgeTrashFile(entry.track.fileName);
     if (!r.ok) return UI.toast(r.message, { kind: 'error' });
     if (entry.track.cover) window.api.removeCover(entry.track.cover);
-    for (const p of entry.track.performances || []) await window.api.purgeTrashFile(p.fileName);
+    for (const f of Lib.perfFiles(entry.track)) await window.api.purgeTrashFile(f);
     S.library.trash.splice(S.library.trash.indexOf(entry), 1);
     await Store.save('library');
   }
@@ -787,6 +855,91 @@ const Tracks = (() => {
     await Celebrate.check(t, attrsBefore);
   }
 
+  /** Быстро поменять категории песни (с карточки), с записью в историю */
+  async function setCategories(id, list) {
+    const t = Lib.track(id);
+    if (!t) return false;
+    const before = History.snapshot(t);
+    const prev = t.categories;
+    t.categories = list;
+    History.record(t, History.diff(before, History.snapshot(t)));
+    t.updatedAt = new Date().toISOString();
+    if (!(await Store.save('library'))) {
+      t.categories = prev;
+      return false;
+    }
+    App.refresh();
+    return true;
+  }
+
+  async function removeCategory(id, catId) {
+    const t = Lib.track(id);
+    const c = Lib.cat(catId);
+    if (!t || !c) return;
+    const ok = await UI.confirm({
+      title: `Убрать категорию «${c.name}»?`,
+      text: `Песня «${fullTitle(t)}» больше не будет в этой категории. Сама категория и другие песни в ней останутся.`,
+      okLabel: 'Убрать',
+      danger: true,
+      icon: 'tag',
+    });
+    if (!ok) return;
+    if (await setCategories(id, t.categories.filter((x) => x !== catId))) UI.toast(`Категория «${c.name}» убрана`);
+  }
+
+  function categoryMenu(id, anchor) {
+    const t = Lib.track(id);
+    if (!t) return;
+    const free = Lib.cats().filter((c) => !t.categories.includes(c.id));
+    const items = free.map((c) => ({
+      label: c.name,
+      color: c.color,
+      onClick: async () => {
+        if (await setCategories(id, [...t.categories, c.id])) UI.toast(`Добавлено в «${c.name}»`, { kind: 'ok' });
+      },
+    }));
+    if (!Lib.cats().length) items.push({ label: 'Создать категорию…', icon: 'plus', onClick: () => Categories.open() });
+    else if (!free.length) items.push({ label: 'Песня уже во всех категориях', icon: 'check', disabled: true });
+    else items.push('-', { label: 'Новая категория…', icon: 'plus', onClick: () => Categories.open() });
+    UI.menu(anchor, items);
+  }
+
+  /** Окно только для комментария (со страницы песни), без всей формы */
+  function editNotes(id) {
+    const t = Lib.track(id);
+    if (!t) return;
+    const ta = h('textarea.input.textarea', { rows: 5, placeholder: 'Любые мысли: что получается, над чем поработать…' });
+    ta.value = t.notes || '';
+    const save = async (m) => {
+      const v = cleanText(ta.value, LIMITS.notes);
+      if (v !== (t.notes || '')) {
+        const before = History.snapshot(t);
+        const prev = t.notes;
+        t.notes = v;
+        History.record(t, History.diff(before, History.snapshot(t)));
+        t.updatedAt = new Date().toISOString();
+        if (!(await Store.save('library'))) {
+          t.notes = prev;
+          return;
+        }
+        App.refresh();
+        UI.toast('Комментарий сохранён', { kind: 'ok' });
+      }
+      m.close('force');
+    };
+    UI.openModal({
+      title: t.notes ? 'Комментарий' : 'Новый комментарий',
+      subtitle: fullTitle(t),
+      className: 'small.notes-modal',
+      body: withCounter(ta, LIMITS.notes),
+      actions: ['spacer', { label: 'Отмена', kind: 'ghost', onClick: (m) => m.close() }, { label: 'Сохранить', kind: 'primary', icon: 'check', onClick: (m) => save(m) }],
+    });
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+    });
+  }
+
   /** Файлы без карточек → черновики */
   async function adoptOrphans(orphans) {
     const busy = UI.busy('Возвращаю файлы в библиотеку…');
@@ -819,5 +972,5 @@ const Tracks = (() => {
     App.refresh();
   }
 
-  return { pickAndAdd, addFromPaths, openForm, remove, restore, purge, replaceFile, saveCopy, setAttr, adoptOrphans, probe };
+  return { pickAndAdd, addFromPaths, openForm, editNotes, remove, restore, purge, replaceFile, saveCopy, setAttr, setCategories, removeCategory, categoryMenu, adoptOrphans, probe };
 })();

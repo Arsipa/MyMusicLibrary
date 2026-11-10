@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, dialog, protocol, shell, Menu, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, shell, Menu, screen, clipboard } = require('electron');
 const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
@@ -202,6 +202,8 @@ function createWindow() {
       writeConfig(config);
     } catch (_) {}
   });
+  // автотест и скриншоты идут без звука — чтобы тестовые мелодии не звучали неожиданно
+  if (TEST) win.webContents.setAudioMuted(true);
   win.loadURL('mml://app/index.html');
   if (TEST) win.webContents.once('did-finish-load', () => require(path.resolve(TEST))(win, () => library));
 }
@@ -263,13 +265,17 @@ function registerIpc() {
   handle('track:trash', async (fileName, kind) => library.moveToTrash(fileName, kind === 'performances' ? 'performances' : 'tracks'));
   handle('track:untrash', async (fileName, kind) => library.restoreFromTrash(fileName, kind === 'performances' ? 'performances' : 'tracks'));
 
-  // видео выступлений
-  handle('perf:pick', async () => {
+  // записи выступлений (видео или аудио) и запись песни с голосом
+  // kind: 'video' | 'audio' | 'vocal'; multi — можно выбрать несколько файлов
+  handle('perf:pick', async (kind, multi = true) => {
+    const audio = ['mp3', 'm4a', 'wav', 'aac', 'flac', 'ogg', 'oga', 'opus', 'weba'];
+    const video = ['mp4', 'm4v', 'webm', 'mov'];
+    const titles = { video: 'Выберите видео выступления', audio: 'Выберите аудиозапись выступления', vocal: 'Выберите запись песни с голосом' };
     const r = await dialog.showOpenDialog(win, {
-      title: 'Выберите видео выступления',
-      properties: ['openFile', 'multiSelections'],
+      title: titles[kind] || titles.video,
+      properties: multi ? ['openFile', 'multiSelections'] : ['openFile'],
       filters: [
-        { name: 'Видео', extensions: ['mp4', 'm4v', 'webm', 'mov'] },
+        kind === 'audio' ? { name: 'Музыка', extensions: audio } : kind === 'vocal' ? { name: 'Музыка и видео', extensions: [...audio, ...video] } : { name: 'Видео', extensions: video },
         { name: 'Все файлы', extensions: ['*'] },
       ],
     });
@@ -421,6 +427,10 @@ function registerIpc() {
     if (TEST) return u.href;
     await shell.openExternal(u.href);
     return u.href;
+  });
+  handle('app:copy', async (text) => {
+    await clipboard.writeText(String(text || '').slice(0, 10000)); // в Electron 45 буфер обмена асинхронный
+    return true;
   });
   handle('app:open-link', async (url) => {
     if (typeof url !== 'string' || !ALLOWED_LINKS.some((a) => url === a || url.startsWith(a + '/'))) throw new LibError('bad_name');

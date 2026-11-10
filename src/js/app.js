@@ -147,6 +147,7 @@ const App = (() => {
 
   /* ---------- Страница трека ---------- */
   function openDetail(id) {
+    Stats.close();
     detailId = id;
     renderDetail();
     const el = document.getElementById('detail');
@@ -169,7 +170,7 @@ const App = (() => {
     const el = document.getElementById('detail');
     const t = detailId && Lib.track(detailId);
     if (!t) return closeDetail();
-    const a = artFor(t.id);
+    const a = { pal: Cover.palette(t) };
     const playing = Player.isPlaying(t.id);
     const missing = S.runtime.missing.has(t.id);
     const scroll = el.scrollTop;
@@ -187,6 +188,7 @@ const App = (() => {
       );
     }
     if (!Lib.attrs().length) attrList.appendChild(h('p.muted', { text: 'Атрибутов пока нет.' }));
+    if (Knowledge.hasScales()) attrList.insertBefore(Knowledge.block(t), attrList.firstChild);
 
     const cats = t.categories.map((id) => Lib.cat(id)).filter(Boolean);
     const videoStage = t.hasVideo ? h('div.d-video') : null;
@@ -232,21 +234,36 @@ const App = (() => {
             'div.d-head',
             null,
             cats.length ? h('div.d-cats', null, cats.map((c) => h('span.cat-pill.on', { style: { '--c': c.color } }, h('span.cat-pill-dot'), c.name))) : null,
-            t.artist ? h('div.d-artist', { text: t.artist }) : null,
-            h('h1.d-title', { text: t.title }),
+            t.artist ? h('div.d-artist', null, h('span', { text: t.artist }), copyBtn(t.artist, 'Скопировать исполнителя', 'Исполнитель скопирован')) : null,
+            h('h1.d-title', null, h('span', { text: t.title }), copyBtn(t.title, 'Скопировать название', 'Название скопировано')),
             h(
               'div.d-file',
               null,
               h('span', { icon: t.hasVideo ? 'video' : 'note' }),
               h('span', { text: [t.originalFileName, t.duration ? fmtTime(t.duration) : null, fmtSize(t.size)].filter(Boolean).join(' · ') })
             ),
-            t.clipUrl
+            t.clipUrl || t.vocal
               ? h(
-                  'button.d-clip',
-                  { title: t.clipUrl, on: { click: () => openClip(t) } },
-                  h('span.d-clip-ic', { icon: 'video' }),
-                  h('span.d-clip-text', null, h('b', { text: 'Смотреть клип' }), h('span', { text: siteName(t.clipUrl) })),
-                  h('span', { icon: 'open' })
+                  'div.d-links',
+                  null,
+                  t.clipUrl
+                    ? h(
+                        'button.d-clip',
+                        { title: t.clipUrl, on: { click: () => openClip(t) } },
+                        h('span.d-clip-ic', { icon: 'video' }),
+                        h('span.d-clip-text', null, h('b', { text: 'Смотреть клип' }), h('span', { text: siteName(t.clipUrl) })),
+                        h('span', { icon: 'open' })
+                      )
+                    : null,
+                  t.vocal
+                    ? h(
+                        'button.d-clip.d-vocal',
+                        { title: t.vocal.url || t.vocal.originalFileName || '', on: { click: () => Vocal.play(t) } },
+                        h('span.d-clip-ic', { icon: 'mic' }),
+                        h('span.d-clip-text', null, h('b', { text: 'Послушать с голосом' }), h('span', { text: t.vocal.url ? siteName(t.vocal.url) : 'запись в библиотеке' + (t.vocal.duration ? ' · ' + fmtTime(t.vocal.duration) : '') })),
+                        h('span', { icon: t.vocal.url ? 'open' : 'play' })
+                      )
+                    : null
                 )
               : null,
             missing
@@ -261,20 +278,30 @@ const App = (() => {
         h(
           'div.d-cols',
           null,
-          h('section.d-panel', null, h('h2.d-h', { text: 'Характеристики' }), attrList),
+          h('section.d-panel.d-chars', null, h('h2.d-h', { text: 'Характеристики' }), attrList),
           h(
             'div.d-side',
             null,
             h(
-              'section.d-panel.d-notes',
+              'div.d-side-in',
               null,
-              h('h2.d-h', { text: 'Комментарий' }),
-              t.notes ? h('p.d-note-text', { text: t.notes }) : h('p.muted', null, 'Пока пусто. ', h('button.link-btn', { text: 'Добавить заметку', on: { click: () => Tracks.openForm(t.id, { mode: t.status === 'draft' ? 'new' : 'edit' }) } }))
-            ),
-            History.section(t)
+              h(
+                'section.d-panel.d-notes',
+                null,
+                h(
+                  'div.d-notes-head',
+                  null,
+                  h('h2.d-h', { text: 'Комментарий' }),
+                  t.notes ? h('button.icon-btn.sm.d-notes-edit', { title: 'Изменить комментарий', 'aria-label': 'Изменить комментарий', icon: 'edit', on: { click: () => Tracks.editNotes(t.id) } }) : null
+                ),
+                t.notes ? h('p.d-note-text', { text: t.notes }) : h('p.muted', null, 'Пока пусто. ', h('button.link-btn.d-notes-add', { text: 'Добавить комментарий', on: { click: () => Tracks.editNotes(t.id) } }))
+              ),
+              Performances.bestSection(t),
+              Performances.section(t)
+            )
           )
         ),
-        Performances.section(t)
+        History.section(t)
       )
     );
     if (videoStage) {
@@ -288,6 +315,30 @@ const App = (() => {
     el.scrollTop = scroll;
   }
 
+  /** Кнопка «скопировать в буфер обмена» */
+  function copyBtn(text, title, done) {
+    return h('button.copy-btn', {
+      type: 'button',
+      title,
+      'aria-label': title,
+      icon: 'copy',
+      on: {
+        click: async (e) => {
+          const btn = e.currentTarget;
+          const r = await window.api.copyText(text);
+          if (!r.ok) return UI.toast('Не получилось скопировать', { kind: 'error' });
+          btn.classList.add('done');
+          btn.innerHTML = icon('check');
+          setTimeout(() => {
+            btn.classList.remove('done');
+            btn.innerHTML = icon('copy');
+          }, 1400);
+          UI.toast(done, { kind: 'ok' });
+        },
+      },
+    });
+  }
+
   /* ---------- Общая перерисовка ---------- */
   function refresh() {
     Filters.renderBar();
@@ -296,6 +347,7 @@ const App = (() => {
     renderGrid();
     renderBanners();
     if (detailId) renderDetail();
+    if (Stats.isOpen()) Stats.render();
     Player.refresh();
   }
 
@@ -373,11 +425,14 @@ const App = (() => {
     document.getElementById('btnAttributes').addEventListener('click', () => AttributesManager.open());
     document.getElementById('btnCategories').addEventListener('click', () => Categories.open());
     document.getElementById('btnSettings').addEventListener('click', () => Backup.open());
+    document.getElementById('btnStats').addEventListener('click', () => Stats.open());
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && detailId && !UI.hasModal()) closeDetail();
+      else if (e.key === 'Escape' && Stats.isOpen() && !UI.hasModal()) Stats.close();
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f' && !UI.hasModal()) {
         e.preventDefault();
         closeDetail();
+        Stats.close();
         Filters.focusSearch();
       }
     });

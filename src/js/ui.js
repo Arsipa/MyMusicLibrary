@@ -92,7 +92,6 @@ const UI = (() => {
       const body = h(
         'div.confirm',
         null,
-        ic ? h('div.confirm-icon' + (danger ? '.danger' : ''), { icon: ic }) : null,
         text ? h('p.confirm-text', { text }) : null,
         extra || null,
         checkbox
@@ -137,7 +136,7 @@ const UI = (() => {
       openModal({
         title,
         className: 'small.choose',
-        body: h('div.confirm', null, ic ? h('div.confirm-icon', { icon: ic }) : null, h('p.confirm-text', { text }), extra || null),
+        body: h('div.confirm', null, h('p.confirm-text', { text }), extra || null),
         onClose: () => {
           if (!done) resolve(null);
         },
@@ -166,7 +165,6 @@ const UI = (() => {
         body: h(
           'div.confirm',
           null,
-          h('div.confirm-icon', { icon: ic }),
           text ? h('p.confirm-text', { text }) : null,
           list && list.length ? h('ul.confirm-list', null, list.map((t) => h('li', { text: t }))) : null
         ),
@@ -219,6 +217,7 @@ const UI = (() => {
           : h(
               'button.ctx-item' + (it.danger ? '.danger' : '') + (it.checked ? '.on' : ''),
               {
+                disabled: !!it.disabled,
                 on: {
                   click: (e) => {
                     e.stopPropagation();
@@ -227,7 +226,7 @@ const UI = (() => {
                   },
                 },
               },
-              h('span', { icon: it.icon }),
+              it.color ? h('span.ctx-dot', { style: { '--c': it.color } }) : h('span', { icon: it.icon }),
               h('span.ctx-label', { text: it.label }),
               it.checked ? h('span.ctx-check', { icon: 'check' }) : null
             )
@@ -258,7 +257,7 @@ const UI = (() => {
     return document.getElementById('menuLayer').classList.contains('open');
   }
   document.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.ctx-menu') || e.target.closest('.dd-btn.open') || e.target.closest('.color-btn.open')) return;
+    if (e.target.closest('.ctx-menu') || e.target.closest('.dd-btn.open') || e.target.closest('.color-btn.open') || e.target.closest('.date-btn.open')) return;
     closeMenu();
   });
   window.addEventListener('blur', closeMenu);

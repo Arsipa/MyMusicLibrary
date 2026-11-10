@@ -14,6 +14,9 @@ const History = (() => {
     added: 'Песня добавлена в библиотеку',
     restored: 'Песня возвращена из корзины',
     file: 'Заменён файл минусовки',
+    'perf-add': 'Добавлена запись',
+    'perf-remove': 'Удалена запись',
+    'perf-best': 'Финальное выступление — эталонище!',
   };
 
   function short(text) {
@@ -35,6 +38,7 @@ const History = (() => {
       },
       notes: { label: 'Комментарий', text: t.notes || '', long: true },
       clip: { label: 'Ссылка на клип', text: t.clipUrl || '' },
+      vocal: { label: 'Запись с голосом', text: t.vocal ? (t.vocal.url ? t.vocal.url : 'файл «' + (t.vocal.originalFileName || 'запись') + '»') : '' },
       cover: { label: 'Обложка', text: t.cover ? 'своя картинка' : '' },
     };
     for (const a of Lib.attrs()) {
@@ -48,8 +52,10 @@ const History = (() => {
     for (const [key, now] of Object.entries(after)) {
       const was = before[key] || { text: '' };
       if ((was.text || '') === (now.text || '')) continue;
-      if (now.long && was.text && now.text) changes.push({ label: now.label, from: short(was.text), to: short(now.text), edited: true });
-      else changes.push({ label: now.label, from: short(was.text), to: short(now.text) });
+      // key — чтобы статистика понимала, какая это шкала, даже если атрибут потом переименуют
+      const id = key.startsWith('attr:') ? { key } : {};
+      if (now.long && was.text && now.text) changes.push({ ...id, label: now.label, from: short(was.text), to: short(now.text), edited: true });
+      else changes.push({ ...id, label: now.label, from: short(was.text), to: short(now.text) });
     }
     return changes;
   }
@@ -95,7 +101,7 @@ const History = (() => {
     function renderMore(limit) {
       for (; shown < Math.min(limit, all.length); shown++) {
         const e = all[shown];
-        const head = KIND_TEXT[e.kind] || (e.kind === 'perf-add' ? 'Добавлено видео выступления' : e.kind === 'perf-remove' ? 'Удалено видео выступления' : null);
+        const head = KIND_TEXT[e.kind] || null;
         list.appendChild(
           h(
             'li.hist-item.k-' + e.kind,

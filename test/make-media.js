@@ -24,7 +24,16 @@ function wav(name, sec, freq) {
   b.writeUInt16LE(16, 34);
   b.write('data', 36);
   b.writeUInt32LE(n * 2, 40);
-  for (let i = 0; i < n; i++) b.writeInt16LE(Math.round(Math.sin((2 * Math.PI * freq * i) / sr) * 8000 * (1 - i / n)), 44 + i * 2);
+  // тихая мягкая мелодия (а не сплошной писк): ноты по полсекунды с плавным затуханием
+  const steps = [1, 5 / 4, 3 / 2, 2, 3 / 2, 5 / 4];
+  const note = sr / 2;
+  for (let i = 0; i < n; i++) {
+    const k = Math.floor(i / note);
+    const t = (i % note) / note;
+    const env = Math.min(1, t * 20) * Math.pow(1 - t, 2);
+    const v = Math.sin((2 * Math.PI * freq * steps[k % steps.length] * i) / sr) * 1800 * env;
+    b.writeInt16LE(Math.round(v), 44 + i * 2);
+  }
   fs.writeFileSync(path.join(dir, name), b);
 }
 

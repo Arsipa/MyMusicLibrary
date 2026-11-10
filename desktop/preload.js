@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('api', {
   info: call('app:info'),
   openLink: call('app:open-link'),
   openUrl: call('app:open-url'),
+  copyText: call('app:copy'),
   pathForFile: (file) => {
     try {
       return webUtils.getPathForFile(file);

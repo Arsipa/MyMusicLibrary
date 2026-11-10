@@ -27,8 +27,10 @@ const Player = (() => {
   function build() {
     const root = bar();
     clear(root);
-    els.art = h('div.pl-art');
-    els.title = h('b.pl-title');
+    // крутящаяся пластинка и название — переход на страницу песни
+    const goDetail = () => currentId && App.openDetail(currentId);
+    els.art = h('div.pl-art', { title: 'Открыть страницу песни', role: 'button', tabindex: 0, on: { click: goDetail, keydown: (e) => e.key === 'Enter' && goDetail() } });
+    els.title = h('b.pl-title', { title: 'Открыть страницу песни', on: { click: goDetail } });
     els.sub = h('span.pl-sub');
     els.play = h('button.pl-play', { title: 'Играть / пауза (пробел)', on: { click: () => toggle() } });
     els.seek = h('input.pl-seek', { type: 'range', min: 0, max: 1000, value: 0, step: 1 });

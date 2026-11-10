@@ -3870,3 +3870,1556 @@ body.sorting * {
   margin-left: 30px;
   font-size: 13.5px;
 }
+
+/* =================== 1.6.0 =================== */
+
+/* ---------- Кнопка «Статистика» ---------- */
+.tb-stats:hover > span {
+  background: #e08a00;
+}
+
+/* ---------- Страница песни: справа комментарий + выступления (по высоте левого блока), история внизу ---------- */
+.d-cols {
+  align-items: stretch;
+}
+.d-chars {
+  min-width: 0;
+}
+.d-side {
+  position: relative;
+  min-height: 600px;
+}
+.d-side-in {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+}
+.d-side-in > .d-notes {
+  flex: none;
+  max-height: 34%;
+  overflow-y: auto;
+}
+.d-side-in > .d-best {
+  flex: none;
+}
+.d-perf {
+  margin-top: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 14px;
+}
+.d-perf-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+.d-perf-head .d-h {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+.perf-add-btns {
+  display: flex;
+  gap: 6px;
+}
+.perf-add-btns .btn .ic {
+  width: 16px;
+  height: 16px;
+}
+.perf-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 -8px;
+  padding: 2px 8px 4px;
+  scrollbar-gutter: stable;
+}
+.d-history {
+  margin-top: 22px;
+}
+
+/* строка выступления */
+.perf-tile {
+  flex: none;
+  display: grid;
+  grid-template-columns: 128px 1fr;
+  align-items: start;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 18px;
+  background: var(--canvas);
+  overflow: visible;
+}
+.perf-tile .perf-shot {
+  border-radius: 12px;
+}
+.perf-tile .perf-play {
+  width: 38px;
+  height: 38px;
+  margin: -19px 0 0 -19px;
+}
+.perf-tile .perf-play .ic {
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+}
+.perf-tile .perf-dur {
+  right: 5px;
+  bottom: 5px;
+  font-size: 11px;
+  padding: 1px 6px;
+}
+.perf-info {
+  padding: 2px 36px 2px 0;
+  gap: 2px;
+}
+.perf-more {
+  top: 6px;
+  right: 6px;
+  bottom: auto;
+}
+.perf-desc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: text;
+  border-radius: 6px;
+}
+.perf-desc:hover {
+  background: rgba(200, 179, 255, 0.25);
+}
+.perf-desc-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 12.5px;
+  align-self: flex-start;
+}
+.perf-desc-add .ic {
+  width: 13px;
+  height: 13px;
+}
+.perf-shot.is-audio {
+  background: linear-gradient(135deg, var(--ink-2), var(--violet));
+}
+.perf-audio {
+  position: relative;
+  color: #fff;
+}
+.perf-audio-disc {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 5px);
+  opacity: 0.8;
+}
+.perf-shot.is-audio .perf-play {
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.3s var(--ease);
+}
+.perf-shot.is-audio:hover .perf-play {
+  opacity: 1;
+}
+.perf-empty {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 14px;
+  border-radius: 18px;
+  border: 2px dashed var(--lavender);
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  max-width: none;
+}
+.perf-empty p {
+  margin: 0;
+}
+.perf-empty-ic {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--coral);
+  color: #fff;
+}
+.perf-empty-ic .ic {
+  width: 20px;
+  height: 20px;
+}
+
+/* окно просмотра / прослушивания */
+.perf-watch-desc {
+  margin: 16px 2px 0;
+  white-space: pre-line;
+  color: var(--ink-2);
+  line-height: 1.5;
+  user-select: text;
+}
+.perf-listen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 0 4px;
+}
+.perf-listen-art {
+  position: relative;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 8px var(--ink), 0 18px 40px -12px rgba(36, 9, 63, 0.6);
+  animation: mmlSpin 9s linear infinite;
+}
+.perf-listen-art .art {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+.perf-listen-ic {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--lime);
+  color: var(--ink);
+}
+.perf-audio-player {
+  width: 100%;
+}
+.perf-watch.best .perf-player,
+.perf-watch.best .perf-listen-art {
+  box-shadow: 0 0 0 4px var(--sun), 0 0 40px rgba(255, 201, 74, 0.55);
+}
+@keyframes mmlSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Лучшее выступление — «идеальная» запись ---------- */
+.d-best {
+  position: relative;
+  overflow: hidden;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #fff8dc 0%, #ffe9a8 45%, #ffd36b 100%);
+  box-shadow: 0 0 0 2px #f5c24a, 0 14px 30px -14px rgba(183, 122, 0, 0.6);
+}
+.d-best.has::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.55) 45%, transparent 60%);
+  transform: translateX(-100%);
+  animation: bestShine 5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes bestShine {
+  0%,
+  60% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.d-best .d-h {
+  margin-bottom: 10px;
+  color: #6b4500;
+}
+.best-crown {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff3c4, #ffc94a);
+  box-shadow: 0 0 14px rgba(255, 201, 74, 0.9);
+}
+.d-h > span.best-crown .ic {
+  color: #b77a00;
+  width: 20px;
+  height: 20px;
+}
+.best-hint {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: #6b4500;
+}
+.best-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+.d-best .btn-soft {
+  background: rgba(255, 255, 255, 0.7);
+}
+.d-best .btn-soft:hover {
+  background: #fff;
+}
+.best-pick .ic {
+  width: 16px;
+  height: 16px;
+}
+.d-best.is-empty {
+  background: linear-gradient(135deg, #fffaf0, #fff0c9);
+  box-shadow: none;
+  outline: 2px dashed #f0b93a;
+  outline-offset: -6px;
+}
+.best-tile {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.best-tile .perf-shot {
+  border-radius: 14px;
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px #f0b93a;
+}
+.best-tile .perf-info {
+  padding-right: 34px;
+}
+.best-tile .perf-title {
+  font-family: var(--display);
+  font-size: 15px;
+  white-space: normal;
+}
+.best-tile .perf-meta {
+  color: #8a5d00;
+}
+.best-tile .perf-desc {
+  color: #4a3000;
+  -webkit-line-clamp: 2;
+}
+.best-tile .perf-more {
+  top: 0;
+  right: 0;
+}
+.best-tile .perf-play {
+  background: var(--sun);
+}
+
+/* праздник «в репертуаре» */
+.celebrate-crown.gold {
+  margin: 0 auto;
+}
+.repertoire .celebrate-big {
+  font-size: 26px;
+  line-height: 1.15;
+  word-break: break-word;
+}
+.celebrate-count {
+  display: inline-block;
+  margin: 6px 0 0;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: var(--ink);
+  color: var(--sun);
+  font-weight: 800;
+  font-size: 13px;
+}
+.hist-item.k-perf-best .hist-dot {
+  background: var(--sun);
+  box-shadow: 0 0 0 4px var(--paper), 0 0 0 6px #f0b93a;
+}
+.art-badge.best {
+  background: var(--sun);
+  color: #6b4500;
+}
+
+/* ---------- Копирование исполнителя и названия ---------- */
+.copy-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-left: 10px;
+  vertical-align: middle;
+  border-radius: 10px;
+  color: var(--ink-soft);
+  background: rgba(200, 179, 255, 0.25);
+  font-size: 0;
+  opacity: 0.55;
+  transition: opacity 0.15s, background 0.15s, color 0.15s, transform 0.2s var(--ease);
+}
+.copy-btn .ic {
+  width: 16px;
+  height: 16px;
+}
+.d-head:hover .copy-btn,
+.copy-btn:focus-visible {
+  opacity: 1;
+}
+.copy-btn:hover {
+  background: var(--lilac);
+  color: var(--violet);
+  transform: rotate(-6deg);
+}
+.copy-btn.done {
+  opacity: 1;
+  background: var(--mint);
+  color: var(--ink);
+}
+.d-title .copy-btn {
+  width: 36px;
+  height: 36px;
+  vertical-align: 0.18em;
+}
+.d-title .copy-btn .ic {
+  width: 19px;
+  height: 19px;
+}
+
+/* ---------- Клип и запись с голосом ---------- */
+.d-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 2px 0 16px;
+}
+.d-links .d-clip {
+  margin: 0;
+}
+.d-vocal {
+  box-shadow: 4px 4px 0 var(--lime);
+}
+.d-vocal:hover {
+  box-shadow: 6px 6px 0 var(--lime);
+}
+.d-vocal .d-clip-ic {
+  background: var(--violet);
+}
+.vocal-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.vocal-field > * {
+  max-width: 100%;
+}
+.vocal-link,
+.vocal-strip,
+.vocal-file {
+  align-self: stretch;
+}
+.vocal-file {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.vocal-file[hidden],
+.vocal-link[hidden] {
+  display: none;
+}
+
+/* ---------- Знание песни ---------- */
+.know {
+  margin-bottom: 4px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, var(--ink), var(--ink-2));
+  color: #fff;
+  cursor: default;
+}
+.know-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.know-head b {
+  flex: 1;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+}
+.know-ic .ic {
+  width: 18px;
+  height: 18px;
+  color: var(--lime);
+}
+.know-lock {
+  display: inline-grid;
+  color: var(--lavender);
+  opacity: 0.8;
+}
+.know-lock .ic {
+  width: 15px;
+  height: 15px;
+}
+.know-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.know-bar {
+  flex: 1;
+  height: 12px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.know-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--coral), var(--sun), var(--lime));
+  transition: width 0.5s var(--ease);
+}
+.know-val {
+  min-width: 52px;
+  text-align: right;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--lime);
+}
+.know-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--lavender);
+}
+.know.is-empty .know-val {
+  color: var(--lavender);
+}
+.card-know {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.card-know::before {
+  content: 'Знание';
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.card-know-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--lilac);
+  overflow: hidden;
+}
+.card-know-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--coral), var(--sun), #9bd400);
+}
+.card-know b {
+  min-width: 34px;
+  text-align: right;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* ---------- Категории на карточке: быстро убрать / добавить ---------- */
+.card-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.card-cat-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-cat-x {
+  display: none;
+  place-items: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: -2px -5px -2px 2px;
+  border-radius: 50%;
+  color: var(--ink-soft);
+}
+.card-cat-x .ic {
+  width: 10px;
+  height: 10px;
+}
+.card-cat:hover .card-cat-x,
+.card-cat-x:focus-visible {
+  display: inline-grid;
+}
+.card-cat-x:hover {
+  background: var(--danger);
+  color: #fff;
+}
+.card-cat.more {
+  border-left-color: var(--lavender);
+  color: var(--ink-soft);
+}
+.card-cat-add {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--violet);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.15s, transform 0.2s var(--ease), background 0.15s;
+}
+.card-cat-add .ic {
+  width: 13px;
+  height: 13px;
+}
+.card:hover .card-cat-add,
+.card:focus-within .card-cat-add {
+  opacity: 1;
+  transform: none;
+}
+.card-cat-add:hover {
+  background: var(--lime);
+  color: var(--ink);
+}
+.ctx-dot {
+  --c: var(--violet);
+  width: 14px;
+  height: 14px;
+  margin: 0 2px;
+  border-radius: 50%;
+  background: var(--c);
+  flex: none;
+}
+.ctx-item:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.ctx-item:disabled:hover {
+  background: none;
+}
+
+/* ---------- Плеер: пластинка и название ведут на страницу песни ---------- */
+.pl-art,
+.pl-title {
+  cursor: pointer;
+}
+.pl-title:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--lime);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+.pl-art:hover .art {
+  box-shadow: 0 0 0 3px var(--lime);
+}
+
+/* ---------- Статистика ---------- */
+.st-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 6px;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(30px, 4vw, 52px);
+  letter-spacing: -0.03em;
+}
+.st-title .ic {
+  width: 40px;
+  height: 40px;
+  color: var(--violet);
+}
+.st-sub {
+  margin: 0 0 18px;
+  color: var(--ink-soft);
+}
+.st-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 22px;
+  margin-bottom: 22px;
+  padding: 14px 18px;
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+.st-ctl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.st-ctl-label {
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.st-date {
+  width: auto;
+  padding: 8px 12px;
+  font-weight: 700;
+}
+.st-auto {
+  flex-basis: 100%;
+  margin: -4px 0 0;
+}
+.st-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 18px;
+}
+.st-card {
+  position: relative;
+  min-width: 0;
+  padding: 18px 20px 12px;
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+.st-card.special {
+  grid-column: 1 / -1;
+  background: linear-gradient(120deg, #2a0a4a, var(--ink-2));
+  color: #fff;
+}
+.st-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.st-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--display);
+  font-size: 16px;
+  min-width: 0;
+}
+.st-name > span:first-child .ic {
+  width: 20px;
+  height: 20px;
+  color: var(--violet);
+}
+.st-card.special .st-name > span:first-child .ic {
+  color: var(--lime);
+}
+.st-now {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin: 8px 0 6px;
+}
+.st-val {
+  font-family: var(--display);
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.st-card.special .st-val {
+  color: var(--lime);
+}
+.st-max {
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.st-count {
+  margin-left: 8px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.st-card.special .st-count,
+.st-card.special .st-max {
+  color: var(--lavender);
+}
+.st-prog {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px 4px 8px;
+  border-radius: 99px;
+  font-weight: 800;
+  font-size: 13px;
+}
+.st-prog .ic {
+  width: 17px;
+  height: 17px;
+}
+.st-prog.up {
+  background: #d9f7e6;
+  color: #12804a;
+}
+.st-prog.down {
+  background: #ffe1e8;
+  color: #c41f4b;
+}
+.st-prog.flat {
+  padding-left: 12px;
+  background: var(--canvas);
+  color: var(--ink-soft);
+}
+.st-chart {
+  position: relative;
+  width: 100%;
+}
+.st-svg {
+  display: block;
+  overflow: visible;
+}
+.st-svg .st-gridline {
+  stroke: rgba(93, 68, 128, 0.14);
+  stroke-width: 1;
+}
+.st-ylab,
+.st-xlab {
+  fill: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--body);
+}
+.st-card.special .st-ylab,
+.st-card.special .st-xlab {
+  fill: var(--lavender);
+}
+.st-card.special .st-svg .st-gridline {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+.st-line {
+  fill: none;
+  stroke: var(--violet);
+  stroke-opacity: 0.25;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.st-card.special .st-line {
+  stroke: var(--lime);
+}
+.st-wick {
+  stroke-width: 1.6;
+}
+.c-up .st-wick {
+  stroke: #1fa463;
+}
+.c-up .st-body {
+  fill: #22b573;
+}
+.c-down .st-wick {
+  stroke: #e0325f;
+}
+.c-down .st-body {
+  fill: #e0325f;
+}
+.c-flat .st-wick {
+  stroke: #a593c4;
+}
+.c-flat .st-body {
+  fill: #a593c4;
+}
+.st-card.special .c-flat .st-body {
+  fill: var(--lavender);
+}
+.st-card.special .c-flat .st-wick {
+  stroke: var(--lavender);
+}
+.st-hit {
+  fill: transparent;
+}
+.st-candle.hover .st-hit {
+  fill: rgba(123, 47, 247, 0.08);
+}
+.st-card.special .st-candle.hover .st-hit {
+  fill: rgba(255, 255, 255, 0.08);
+}
+.st-tip {
+  position: absolute;
+  z-index: 5;
+  width: 170px;
+  transform: translateY(-100%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: var(--shadow);
+}
+.st-tip[hidden] {
+  display: none;
+}
+.st-tip .muted {
+  color: var(--lavender);
+}
+.st-tip .st-up {
+  color: #6ff0a8;
+  font-weight: 800;
+}
+.st-tip .st-down {
+  color: #ff8fae;
+  font-weight: 800;
+}
+.st-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 50px 20px;
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  text-align: center;
+}
+.st-empty h3 {
+  margin: 0;
+  font-family: var(--display);
+}
+
+/* ---------- Новый вариант списка прямо из формы песни ---------- */
+.opt-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 14px 20px 14px 20px;
+  border: 2px dashed var(--lavender);
+  color: var(--violet);
+  font-weight: 800;
+  transition: background 0.15s, border-color 0.15s, transform 0.2s var(--ease);
+}
+.opt-new .ic {
+  width: 15px;
+  height: 15px;
+}
+.opt-new:hover {
+  background: rgba(200, 179, 255, 0.18);
+  border-color: var(--violet);
+  transform: translateY(-2px);
+}
+.opt-new[hidden],
+.opt-new-edit[hidden] {
+  display: none;
+}
+.opt-new-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.opt-new-input {
+  width: 180px;
+  padding: 8px 12px;
+  border-radius: 14px;
+}
+.opt-new-ok {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--lime);
+}
+.opt-new-ok .ic {
+  width: 17px;
+  height: 17px;
+}
+
+/* =================== 1.6.0 — доработки после проверки =================== */
+
+/* «Репетиции»: заголовок не наезжает на кнопки */
+.d-perf-head {
+  justify-content: space-between;
+}
+.d-perf-head .d-h {
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+.d-perf-head {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.d-perf-head .perf-add-btns {
+  flex: none;
+}
+
+/* Финальное выступление: нормальные отступы и плашка «Эталонище» */
+.d-best {
+  padding: 24px 28px 26px;
+}
+.best-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+.best-head .d-h {
+  margin: 0;
+}
+.d-best.is-empty {
+  outline-offset: -10px;
+}
+.best-hint {
+  margin: 0 0 14px;
+}
+
+/* Прослушивание аудио: обложка на весь круг */
+.perf-listen-art .art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  aspect-ratio: auto;
+}
+.perf-listen-art .art-letter {
+  display: none;
+}
+
+/* Название и описание записи: больше воздуха между полями */
+.perf-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.perf-edit .field-label {
+  margin-bottom: 8px;
+}
+
+/* Небольшие окна: заголовок по центру, крестик не сдвигает его */
+.modal.small .modal-head {
+  position: relative;
+  justify-content: center;
+  padding: 30px 64px 8px;
+  text-align: center;
+}
+.modal.small .modal-x {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+.modal.small .modal-sub {
+  margin-left: auto;
+  margin-right: auto;
+}
+.modal.small .confirm {
+  align-items: center;
+}
+.modal.small .confirm-text {
+  text-align: center;
+}
+.modal.small .confirm .check,
+.modal.small .confirm-list,
+.modal.small .confirm .dup-list,
+.modal.small .confirm .dup-hint {
+  align-self: stretch;
+}
+
+/* Плюсик категорий на карточке — слева от первой категории, не над кнопкой «играть» */
+.card-cats {
+  position: absolute;
+}
+.card-cat-add {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 6px);
+}
+
+/* Запись с голосом: кнопка «Другой файл» читается на тёмной полосе */
+.vocal-strip .vocal-other {
+  background: var(--lime);
+  color: var(--ink);
+}
+.vocal-strip .vocal-other:hover {
+  background: #fff;
+}
+.vocal-other .ic {
+  width: 15px;
+  height: 15px;
+}
+
+/* «Уровень» на карточке — крупно, сразу под названием */
+.card-know {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: linear-gradient(120deg, var(--ink), var(--ink-2));
+  color: #fff;
+}
+.card-know::before {
+  content: none;
+}
+.card-know-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lavender);
+}
+.card-know-label .ic {
+  width: 16px;
+  height: 16px;
+  color: var(--lime);
+}
+.card-know .card-know-val {
+  min-width: 0;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--lime);
+}
+.card-know-bar {
+  grid-column: 1 / -1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.card-know-bar i {
+  background: linear-gradient(90deg, var(--coral), var(--sun), var(--lime));
+}
+.know-ic .ic {
+  width: 19px;
+  height: 19px;
+}
+
+/* «+» нового варианта в форме */
+.opt-new {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 14px;
+}
+.opt-new .ic {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Статистика: понятный линейный график ---------- */
+.st-fromto {
+  margin: -2px 0 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.st-fromto b {
+  color: var(--ink);
+}
+.st-card.special .st-fromto {
+  color: var(--lavender);
+}
+.st-card.special .st-fromto b {
+  color: #fff;
+}
+.st-svg .st-line {
+  fill: none;
+  stroke: var(--violet);
+  stroke-opacity: 1;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.st-card.special .st-svg .st-line {
+  stroke: var(--lime);
+}
+.st-area-top {
+  stop-color: var(--violet);
+  stop-opacity: 0.28;
+}
+.st-area-bottom {
+  stop-color: var(--violet);
+  stop-opacity: 0;
+}
+.st-card.special .st-area-top {
+  stop-color: var(--lime);
+  stop-opacity: 0.25;
+}
+.st-card.special .st-area-bottom {
+  stop-color: var(--lime);
+}
+.st-base {
+  stroke: var(--ink-soft);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+  opacity: 0.6;
+}
+.st-card.special .st-base {
+  stroke: var(--lavender);
+}
+.st-base-lab {
+  fill: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--body);
+}
+.st-card.special .st-base-lab {
+  fill: var(--lavender);
+}
+.st-dot {
+  stroke: var(--paper);
+  stroke-width: 2;
+}
+.st-card.special .st-dot {
+  stroke: var(--ink-2);
+}
+.c-up .st-dot {
+  fill: #22b573;
+}
+.c-down .st-dot {
+  fill: #e0325f;
+}
+.c-flat .st-dot {
+  fill: #a593c4;
+}
+.st-pt.hover .st-dot {
+  r: 7px;
+}
+.st-guide {
+  stroke: var(--violet);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.5;
+}
+.st-card.special .st-guide {
+  stroke: #fff;
+}
+.st-pt.hover .st-hit,
+.st-card.special .st-pt.hover .st-hit {
+  fill: transparent;
+}
+.st-nodata {
+  fill: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--body);
+}
+.st-card.special .st-nodata {
+  fill: var(--lavender);
+}
+
+/* ---------- Выбор даты ---------- */
+.date-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--canvas);
+  font-weight: 800;
+  font-size: 13.5px;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.date-btn:hover,
+.date-btn.open {
+  background: var(--lilac);
+}
+.date-btn.open {
+  box-shadow: 0 0 0 2px var(--violet);
+}
+.date-btn-ic .ic {
+  width: 17px;
+  height: 17px;
+  color: var(--violet);
+}
+.date-btn-chev .ic {
+  width: 15px;
+  height: 15px;
+  color: var(--ink-soft);
+}
+.dp-pop {
+  width: 292px;
+  padding: 14px;
+}
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.dp-title {
+  font-family: var(--display);
+  font-size: 15px;
+  text-transform: capitalize;
+}
+.dp-nav {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  color: var(--ink);
+  transition: background 0.15s;
+}
+.dp-nav .ic {
+  width: 17px;
+  height: 17px;
+}
+.dp-nav.next .ic {
+  transform: scaleX(-1);
+}
+.dp-nav:hover:not(:disabled) {
+  background: var(--lilac);
+}
+.dp-nav:disabled {
+  opacity: 0.3;
+}
+.dp-week,
+.dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.dp-week span {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #a593c4;
+  text-transform: uppercase;
+  padding: 2px 0 6px;
+}
+.dp-day {
+  height: 34px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink);
+  transition: background 0.12s, transform 0.15s var(--ease);
+}
+.dp-day:hover:not(:disabled) {
+  background: var(--lilac);
+  transform: scale(1.06);
+}
+.dp-day.today {
+  box-shadow: inset 0 0 0 2px var(--lavender);
+}
+.dp-day.on {
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 2px 2px 0 var(--lime);
+}
+.dp-day:disabled {
+  color: #cfc4e0;
+  cursor: default;
+}
+.dp-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--lilac);
+}
+
+/* =================== 1.6.0 — доработки, круг 2 =================== */
+
+/* «Эталонище» — лента в углу финального выступления; заголовок не заезжает под неё */
+.best-ribbon {
+  position: absolute;
+  top: 20px;
+  right: -40px;
+  z-index: 2;
+  transform: rotate(35deg);
+  padding: 5px 46px;
+  background: var(--ink);
+  color: var(--sun);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 10px -4px rgba(36, 9, 63, 0.6);
+}
+.d-best.has .best-head {
+  padding-right: 64px;
+}
+.d-best.has .best-tile .perf-more {
+  top: 2px;
+}
+
+/* Комментарий: заголовок с карандашом */
+.d-notes-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.d-notes-edit {
+  color: var(--lavender);
+  flex: none;
+}
+.d-notes-edit:hover:not(:disabled) {
+  background: rgba(200, 179, 255, 0.18);
+  color: var(--lime);
+}
+.notes-modal .textarea {
+  min-height: 140px;
+}
+
+/* Категории на карточке: столбиком, плюсик — следующим элементом под ними */
+.card-cat-add {
+  position: static;
+  right: auto;
+}
+
+/* Звёздочка на кнопке «Ура!» — крупнее и ровно по центру строки */
+.modal.celebrate .modal-actions .btn > span:first-child {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+.modal.celebrate .modal-actions .btn .ic {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+/* Окна никогда не прокручиваются вбок: длинные тексты переносятся */
+.modal-body {
+  overflow-x: hidden;
+}
+.confirm-text,
+.modal-title,
+.modal-sub {
+  overflow-wrap: anywhere;
+}
+.modal.small .confirm > * {
+  max-width: 100%;
+}
+.modal.small .confirm > div {
+  align-self: stretch;
+}
+.dup-item {
+  align-items: flex-start;
+}
+.dup-main {
+  flex: 1;
+}
+.dup-main b,
+.dup-main span {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+/* Календарь периода: подсветка диапазона */
+.dp-day.in {
+  background: var(--lilac);
+  border-radius: 6px;
+}
+.dp-day.edge {
+  background: var(--ink);
+  color: #fff;
+}
+.dp-day.from {
+  border-radius: 10px 4px 4px 10px;
+}
+.dp-day.to {
+  border-radius: 4px 10px 10px 4px;
+  box-shadow: 2px 2px 0 var(--lime);
+}
+.dp-day.edge:hover:not(:disabled) {
+  background: var(--ink-2);
+}
+.dp-grid {
+  gap: 3px 0;
+}
+.dp-hint {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.dp-foot {
+  justify-content: flex-start;
+}
+
+/* =================== 1.6.0 — доработки, круг 3 =================== */
+
+/* «Ура!»: крупная звезда ровно по центру строки с текстом */
+.modal.celebrate .modal-actions .btn {
+  height: 52px;
+  padding: 0 26px 0 22px;
+  gap: 10px;
+  font-size: 16px;
+}
+.modal.celebrate .modal-actions .btn .ic {
+  width: 26px;
+  height: 26px;
+}
+
+/* Финальное выступление: кнопки по центру, одного вида, тёмные — хорошо видны на золоте */
+.d-best.is-empty .best-hint {
+  text-align: center;
+}
+.d-best.is-empty .best-head {
+  justify-content: center;
+}
+.best-actions {
+  justify-content: center;
+}
+.best-actions .perf-add-btns {
+  justify-content: center;
+}
+.d-best .best-actions .btn {
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 3px 3px 0 #f0b93a;
+}
+.d-best .best-actions .btn:hover:not(:disabled) {
+  background: var(--ink-2);
+  color: #fff;
+  box-shadow: 4px 5px 0 #f0b93a;
+}
+.d-best .best-actions .btn .ic {
+  width: 16px;
+  height: 16px;
+  color: var(--sun);
+}
+.best-pick-chev .ic {
+  width: 14px !important;
+  height: 14px !important;
+  color: var(--lavender) !important;
+}
