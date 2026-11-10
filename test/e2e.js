@@ -332,6 +332,19 @@ module.exports = async (win, getLib) => {
     await shot('11-filters');
     ok((await js(`document.querySelectorAll('.card').length`)) === 1, 'фильтр по характеру оставляет 1 трек');
     await js(`Filters.reset(); 1`);
+    // фильтр по встроенному «Уровню»
+    await js(`document.querySelector('.filter-btn').click(); 1`);
+    await sleep(300);
+    ok(await js(`!!document.querySelector('.fp-group.fp-level') && document.querySelector('.fp-group.fp-level .fp-head').textContent.includes('Уровень')`), 'в фильтрах есть «Уровень»');
+    const lvl = await js(`Lib.tracks().filter(t => t.status !== 'draft').map(t => (Knowledge.of(t) || {}).pct).filter(x => x !== undefined)`);
+    const cut = Math.max(...lvl);
+    await js(`(() => { const ins=document.querySelectorAll('.fp-level .rs-input'); ins[0].value=${Math.floor(cut / 5) * 5}; ins[0].dispatchEvent(new Event('input')); return 1; })()`);
+    await sleep(400);
+    const expect = lvl.filter((x) => x >= Math.floor(cut / 5) * 5).length;
+    ok((await js(`document.querySelectorAll('.card').length`)) === expect && (await js(`[...document.querySelectorAll('.active-pill')].some(p => p.textContent.includes('Уровень'))`)), `фильтр по уровню оставляет только песни с уровнем от ${Math.floor(cut / 5) * 5}% (${expect})`);
+    await shot('11b-filter-level');
+    await js(`Filters.reset(); 1`);
+    await sleep(200);
     await js(`(() => { const i=document.querySelector('.search-input'); i.value='колыб'; i.dispatchEvent(new Event('input')); return 1; })()`);
     await sleep(400);
     ok((await js(`document.querySelectorAll('.card').length`)) === 1, 'поиск по названию находит «Колыбельную»');

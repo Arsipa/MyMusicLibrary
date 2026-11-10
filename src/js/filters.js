@@ -5,10 +5,11 @@ const Filters = (() => {
   const state = {
     search: '',
     cats: new Set(),
-    attrs: {}, // attrId -> {kind:'options', values:Set} | {kind:'range', min, max} | {kind:'filled', value:'yes'|'no'}
+    attrs: {}, // attrId -> {kind:'options', values:Set} | {kind:'range', min, max} | {kind:'filled', value:'yes'|'no'}; LEVEL — встроенный «Уровень» (0–100%)
     panelOpen: false,
   };
 
+  const LEVEL = '__level';
   const bar = () => document.getElementById('filterbar');
   const panel = () => document.getElementById('filterPanel');
   let searchInp;
@@ -196,6 +197,7 @@ const Filters = (() => {
     if (!state.panelOpen) return;
     clear(p);
     const groups = h('div.fp-groups');
+    if (Knowledge.hasScales()) groups.appendChild(levelGroup());
     for (const a of Lib.attrs()) {
       const g = group(a);
       if (g) groups.appendChild(g);
@@ -316,6 +318,32 @@ const Filters = (() => {
     return h('div.fp-group', null, head, h('div.fp-opts', null, mk('yes', 'заполнено'), mk('no', 'пусто')));
   }
 
+  /** Встроенный «Уровень» (считается из всех шкал) — диапазон в процентах */
+  function levelGroup() {
+    const f = state.attrs[LEVEL];
+    const head = h('div.fp-head', null, h('span', { icon: 'trendUp' }), h('b', { text: Knowledge.name() }));
+    if (f) head.appendChild(h('button.fp-clear', { text: 'сбросить', on: { click: () => (delete state.attrs[LEVEL], changed()) } }));
+    const bounds = { min: 0, max: 100 };
+    const cur = f || bounds;
+    return h(
+      'div.fp-group.fp-level',
+      null,
+      head,
+      rangeSlider(
+        bounds,
+        cur,
+        5,
+        (mn, mx) => {
+          if (mn <= bounds.min && mx >= bounds.max) delete state.attrs[LEVEL];
+          else state.attrs[LEVEL] = { kind: 'range', min: mn, max: mx };
+          App.renderGrid();
+          renderBar();
+        },
+        '%'
+      )
+    );
+  }
+
   function numericBounds(a) {
     if (a.type === 'scale') return { min: a.min, max: a.max, step: 1 };
     const vals = Lib.tracks()
@@ -330,7 +358,7 @@ const Filters = (() => {
     return { min: mn, max: mx, step: allInt ? 1 : (mx - mn) / 100 };
   }
 
-  function rangeSlider(bounds, cur, step, onChange) {
+  function rangeSlider(bounds, cur, step, onChange, unit = '') {
     const lo = h('input.rs-input', { type: 'range', min: bounds.min, max: bounds.max, step, value: cur.min });
     const hi = h('input.rs-input', { type: 'range', min: bounds.min, max: bounds.max, step, value: cur.max });
     const label = h('span.rs-label');
@@ -342,7 +370,7 @@ const Filters = (() => {
       const span = bounds.max - bounds.min || 1;
       wrap.style.setProperty('--a', ((a - bounds.min) / span) * 100 + '%');
       wrap.style.setProperty('--b', ((b - bounds.min) / span) * 100 + '%');
-      const fmt = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
+      const fmt = (x) => String(Math.round(x * 100) / 100).replace('.', ',') + unit;
       label.textContent = a === b ? fmt(a) : `от ${fmt(a)} до ${fmt(b)}`;
       return [a, b];
     };
@@ -366,6 +394,11 @@ const Filters = (() => {
   function match(t) {
     if (state.cats.size && !t.categories.some((id) => state.cats.has(id))) return false;
     for (const [id, f] of Object.entries(state.attrs)) {
+      if (id === LEVEL) {
+        const k = Knowledge.of(t);
+        if (!k || k.pct < f.min || k.pct > f.max) return false;
+        continue;
+      }
       const a = Lib.attr(id);
       if (!a) continue;
       const v = t.attributes[id];
@@ -455,6 +488,10 @@ const Filters = (() => {
         );
     }
     for (const [id, f] of Object.entries(state.attrs)) {
+      if (id === LEVEL) {
+        out.push(pill(`${Knowledge.name()}: ${f.min === f.max ? f.min + '%' : `${f.min}–${f.max}%`}`, () => (delete state.attrs[LEVEL], changed())));
+        continue;
+      }
       const a = Lib.attr(id);
       if (!a) continue;
       let text = a.name + ': ';
